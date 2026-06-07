@@ -1,0 +1,262 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/routes/app_routes.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/utils/formatters.dart';
+import '../../models/enums.dart';
+import '../../providers/ai_planner_provider.dart';
+import '../../providers/spots_provider.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/app_text_field.dart';
+import '../../widgets/feedback.dart';
+
+/// Conversational AI planner brief (Mindtrip/Layla style): destination, dates,
+/// interests, budget, pace → a day-by-day itinerary.
+class AiPlannerScreen extends StatefulWidget {
+  const AiPlannerScreen({super.key});
+
+  @override
+  State<AiPlannerScreen> createState() => _AiPlannerScreenState();
+}
+
+class _AiPlannerScreenState extends State<AiPlannerScreen> {
+  final _destination = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _destination.text = context.read<AiPlannerProvider>().destination;
+  }
+
+  @override
+  void dispose() {
+    _destination.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate(AiPlannerProvider aiP) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: aiP.startDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 730)),
+    );
+    if (picked != null) aiP.setStartDate(picked);
+  }
+
+  Future<void> _generate() async {
+    final aiP = context.read<AiPlannerProvider>();
+    final spotsP = context.read<SpotsProvider>();
+    final ok = await aiP.generate(spotsP.spots);
+    if (!mounted) return;
+    if (ok && aiP.result != null) {
+      Navigator.pushNamed(context, AppRoutes.itineraryResult, arguments: aiP.result);
+    } else if (aiP.error != null) {
+      AppSnackbar.error(context, aiP.error!);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final aiP = context.watch<AiPlannerProvider>();
+    final spotsP = context.watch<SpotsProvider>();
+    final text = Theme.of(context).textTheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Plan with AI'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.md),
+            child: Center(
+              child: Chip(
+                avatar: Icon(
+                  aiP.isLive ? Icons.bolt_rounded : Icons.smart_toy_outlined,
+                  size: 16,
+                  color: AppColors.tealDark,
+                ),
+                label: Text(aiP.isLive ? 'Gemini' : 'On-device AI'),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              gradient: AppColors.lagoonGradient,
+              borderRadius: AppRadius.brLg,
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 28),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    'Tell me your vibe and I\'ll craft a day-by-day plan from real, approved spots.',
+                    style: text.bodyMedium?.copyWith(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppTextField(
+            controller: _destination,
+            label: 'Where to?',
+            hint: 'e.g. Cairo',
+            prefixIcon: Icons.place_outlined,
+            onChanged: aiP.setDestinationText,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              for (final city in spotsP.cities.take(6))
+                ActionChip(
+                  label: Text(city),
+                  onPressed: () {
+                    _destination.text = city;
+                    aiP.setDestinationText(city);
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: _Field(
+                  label: 'Start date',
+                  child: InkWell(
+                    onTap: () => _pickDate(aiP),
+                    borderRadius: AppRadius.brMd,
+                    child: _box(context, Formatters.date(aiP.startDate), Icons.calendar_today_rounded),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _Field(
+                  label: 'Days',
+                  child: Row(
+                    children: [
+                      IconButton.filledTonal(
+                        onPressed: aiP.dayCount > 1 ? () => aiP.setDays(aiP.dayCount - 1) : null,
+                        icon: const Icon(Icons.remove_rounded),
+                      ),
+                      Expanded(child: Text('${aiP.dayCount}', textAlign: TextAlign.center, style: text.titleLarge)),
+                      IconButton.filledTonal(
+                        onPressed: aiP.dayCount < 14 ? () => aiP.setDays(aiP.dayCount + 1) : null,
+                        icon: const Icon(Icons.add_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Interests', style: text.labelLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final interest in AiPlannerProvider.suggestedInterests)
+                FilterChip(
+                  label: Text(interest),
+                  selected: aiP.interests.contains(interest),
+                  onSelected: (_) => aiP.toggleInterest(interest),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Budget', style: text.labelLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              for (final p in PriceRange.values)
+                ChoiceChip(
+                  label: Text(p.label),
+                  selected: aiP.budget == p,
+                  onSelected: (_) => aiP.setBudget(p),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Pace', style: text.labelLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              for (final pace in TripPace.values)
+                ChoiceChip(
+                  label: Text('${pace.label} · ${pace.stopsPerDay}/day'),
+                  selected: aiP.pace == pace,
+                  onSelected: (_) => aiP.setPace(pace),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          AppButton(
+            'Generate itinerary',
+            icon: Icons.auto_awesome_rounded,
+            loading: aiP.generating,
+            onPressed: aiP.canGenerate ? _generate : null,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Center(
+            child: Text(
+              aiP.isLive
+                  ? 'Powered by Google Gemini'
+                  : 'Using the on-device planner · add a Gemini key in Settings to go live',
+              style: text.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _box(BuildContext context, String label, IconData icon) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.brMd,
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+          ],
+        ),
+      );
+}
+
+class _Field extends StatelessWidget {
+  final String label;
+  final Widget child;
+  const _Field({required this.label, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: AppSpacing.sm),
+        child,
+      ],
+    );
+  }
+}

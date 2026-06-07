@@ -46,3 +46,7 @@ app.*.map.json
 
 # Course lectures (kept local only, not tracked)
 /lectures/
+
+# Local environment file (API keys / URLs filled in later). The committed
+# template is .env.example.
+.env

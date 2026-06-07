@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:spot_wise/main.dart';
+import 'package:spot_wise/models/enums.dart';
+import 'package:spot_wise/models/spot.dart';
+import 'package:spot_wise/widgets/app_logo.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('AppLogo renders the wordmark', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: Center(child: AppLogo()))),
+    );
+    expect(find.text('SpotWise'), findsOneWidget);
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  test('Spot round-trips through JSON', () {
+    final spot = Spot(
+      id: 's1',
+      name: 'Test Spot',
+      description: 'A lovely place',
+      country: 'Egypt',
+      city: 'Cairo',
+      categoryId: 'landmark',
+      lat: 30.0,
+      lng: 31.0,
+      priceRange: PriceRange.budget,
+      status: SpotStatus.approved,
+      submittedBy: 'u1',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    final restored = Spot.fromJson('s1', spot.toJson());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(restored.name, 'Test Spot');
+    expect(restored.city, 'Cairo');
+    expect(restored.priceRange, PriceRange.budget);
+    expect(restored.status, SpotStatus.approved);
+    expect(restored.lat, 30.0);
   });
 }
