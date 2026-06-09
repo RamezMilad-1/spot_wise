@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'core/routes/app_routes.dart';
 import 'providers/admin_provider.dart';
 import 'providers/ai_planner_provider.dart';
 import 'providers/auth_provider.dart';
@@ -14,6 +15,7 @@ import 'providers/notifications_provider.dart';
 import 'providers/spots_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/trips_provider.dart';
+import 'services/notifications/push_service.dart';
 import 'services/service_locator.dart';
 
 Future<void> main() async {
@@ -26,6 +28,12 @@ Future<void> main() async {
 
   await Hive.initFlutter();
   await ServiceLocator.instance.init();
+
+  // Push notifications (Android only; no-op elsewhere).
+  await PushService.bootstrap();
+  services.push.onOpen = (_) =>
+      navigatorKey.currentState?.pushNamed(AppRoutes.notifications);
+  await services.push.init();
 
   final theme = ThemeProvider();
   final categories = CategoryStore();

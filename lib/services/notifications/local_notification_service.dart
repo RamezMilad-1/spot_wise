@@ -20,6 +20,17 @@ class LocalNotificationService {
         macOS: DarwinInitializationSettings(),
       );
       await _plugin.initialize(settings);
+      // Pre-create the channel so FCM tray notifications (delivered while the
+      // app is backgrounded/terminated) land on the high-importance channel.
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(const AndroidNotificationChannel(
+            'spotwise_default',
+            'SpotWise',
+            description: 'SpotWise updates and reminders',
+            importance: Importance.high,
+          ));
       _ready = true;
     } catch (_) {
       _ready = false;

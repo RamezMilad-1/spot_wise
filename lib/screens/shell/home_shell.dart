@@ -53,6 +53,7 @@ class _HomeShellState extends State<HomeShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SpotsProvider>().load();
       context.read<TripsProvider>().load();
+      context.read<AuthProvider>().registerPushToken();
       if (!kIsWeb) services.notifications.requestPermission();
     });
   }

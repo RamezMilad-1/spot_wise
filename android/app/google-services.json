@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "360201306681",
+    "firebase_url": "https://spot-wise-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "spot-wise",
+    "storage_bucket": "spot-wise.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:360201306681:android:b2c083fa416ce3737003e8",
+        "android_client_info": {
+          "package_name": "com.example.spot_wise"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAs4X65T9b_OdX8oLICnu-jVQC7DH6uxgk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
