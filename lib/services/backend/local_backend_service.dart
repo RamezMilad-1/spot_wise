@@ -209,5 +209,16 @@ class LocalBackendService implements BackendService {
   }
 
   @override
+  Future<List<AppUser>> getUsers() async {
+    await Future.delayed(_latency);
+    final list = _all(_users, AppUser.fromJson);
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
+  }
+
+  @override
   Future<void> saveUser(AppUser user) => _users.put(user.id, user.toJson());
+
+  @override
+  Future<void> deleteUser(String id) => _users.delete(id);
 }

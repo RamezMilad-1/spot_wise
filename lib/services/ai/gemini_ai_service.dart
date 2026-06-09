@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/constants/categories.dart';
@@ -11,6 +12,7 @@ import '../../models/spot.dart';
 import '../../models/trip.dart';
 import 'ai_service.dart';
 import 'local_itinerary_generator.dart';
+import 'trip_estimator.dart';
 
 /// Google Gemini itinerary planner over the `generativelanguage` REST API
 /// (raw `http`, key from `.env`). Grounds the model on the app's approved spots
@@ -75,27 +77,47 @@ class GeminiAiService implements AiService {
     }
   }
 
-  String _buildPrompt(AiPlanRequest req, List<Spot> spots) {
+  List<Spot> _candidatePool(AiPlanRequest req, List<Spot> spots) {
+    bool near(Spot s) {
+      if (req.lat == null || req.lng == null) return false;
+      return const Distance().as(LengthUnit.Kilometer, LatLng(req.lat!, req.lng!), s.latLng) <= 60;
+    }
+
+    final d = req.destination.trim().toLowerCase();
     final relevant = spots
-        .where((s) => s.city.toLowerCase().contains(req.destination.trim().toLowerCase()))
+        .where((s) => (d.isNotEmpty && s.city.toLowerCase().contains(d)) || near(s))
         .toList();
-    final pool = (relevant.isNotEmpty ? relevant : spots).take(40).toList();
+    final pool = relevant.isNotEmpty ? relevant : spots;
+    return pool.take(40).toList();
+  }
+
+  String _buildPrompt(AiPlanRequest req, List<Spot> spots) {
+    final pool = _candidatePool(req, spots);
     final spotLines = pool
         .map((s) =>
-            '- id:${s.id} | ${s.name} | ${Categories.labelFor(s.categoryId)} | ${s.city} | tags:${s.tags.join(', ')} | rating:${s.rating}')
+            '- id:${s.id} | ${s.name} | ${Categories.labelFor(s.categoryId)} | ${s.city} '
+            '| price:${s.priceRange.symbol} (~\$${TripEstimator.stopCost(s).round()}) '
+            '| ~${TripEstimator.durationMinutes(s.categoryId)}min '
+            '| rating:${s.rating} '
+            '| loc:${s.lat.toStringAsFixed(4)},${s.lng.toStringAsFixed(4)} '
+            '| tags:${s.tags.join(', ')}')
         .join('\n');
+
+    final budgetLine = req.budgetCap != null
+        ? 'Keep the whole trip under about \$${req.budgetCap!.round()} total — favour free and budget spots when it helps stay under.'
+        : 'Aim for a ${req.budget.label.toLowerCase()} budget.';
 
     return '''
 You are SpotWise, an expert local travel planner. Design a ${req.dayCount}-day itinerary for ${req.destination}${req.country.isNotEmpty ? ', ${req.country}' : ''}.
-Traveller interests: ${req.interests.isEmpty ? 'general sightseeing' : req.interests.join(', ')}.
-Budget: ${req.budget.label}. Pace: ${req.pace.label} (about ${req.pace.stopsPerDay} stops per day).
+Explorer interests: ${req.interests.isEmpty ? 'general sightseeing' : req.interests.join(', ')}.
+Pace: ${req.pace.label} (about ${req.pace.stopsPerDay} stops per day). $budgetLine
 
-Choose ONLY from these approved spots and reference each by its exact id:
+Choose ONLY from these approved spots and reference each by its exact id. Use the loc lat,lng to cluster nearby places on the same day and avoid backtracking:
 $spotLines
 
 Return STRICT JSON (no markdown, no commentary) shaped exactly like:
-{"days":[{"title":"short day title","summary":"one sentence","stops":[{"spotId":"the id","dayPart":"morning|afternoon|evening","time":"09:00","note":"one short practical tip"}]}]}
-Spread the stops across morning, afternoon and evening, cluster nearby places to avoid backtracking, and keep roughly ${req.pace.stopsPerDay} stops per day.
+{"days":[{"title":"short day title","summary":"one sentence","stops":[{"spotId":"the id","note":"one short practical tip"}]}]}
+Order each day's stops from morning to evening and keep roughly ${req.pace.stopsPerDay} stops per day. SpotWise computes exact visit times and the budget itself, so you don't need to.
 ''';
   }
 
@@ -104,7 +126,7 @@ Spread the stops across morning, afternoon and evening, cluster nearby places to
     final byName = {for (final s in spots) s.name.toLowerCase(): s};
     final daysJson = (json['days'] as List?) ?? const [];
 
-    final days = <TripDay>[];
+    final rawDays = <TripDay>[];
     for (var i = 0; i < daysJson.length; i++) {
       final dj = Map<String, dynamic>.from(daysJson[i] as Map);
       final stopsJson = (dj['stops'] as List?) ?? const [];
@@ -114,6 +136,8 @@ Spread the stops across morning, afternoon and evening, cluster nearby places to
         final spot = byId[JsonUtils.asString(m['spotId'])] ??
             byName[JsonUtils.asString(m['name']).toLowerCase()];
         if (spot == null) continue;
+        // Times + day-parts are computed by the estimator, not trusted from the
+        // model, so the schedule is always realistic.
         stops.add(TripStop(
           spotId: spot.id,
           name: spot.name,
@@ -121,22 +145,24 @@ Spread the stops across morning, afternoon and evening, cluster nearby places to
           categoryId: spot.categoryId,
           lat: spot.lat,
           lng: spot.lng,
-          dayPart: DayPart.fromString(JsonUtils.asStringOrNull(m['dayPart'])),
-          suggestedTime: JsonUtils.asString(m['time']),
           note: JsonUtils.asString(m['note']),
+          estimatedCost: TripEstimator.stopCost(spot),
+          durationMinutes: TripEstimator.durationMinutes(spot.categoryId),
         ));
       }
       if (stops.isEmpty) continue;
-      days.add(TripDay(
-        dayNumber: days.length + 1,
-        date: req.startDate.add(Duration(days: days.length)),
-        title: JsonUtils.asString(dj['title'], 'Day ${days.length + 1}'),
+      rawDays.add(TripDay(
+        dayNumber: rawDays.length + 1,
+        date: req.startDate.add(Duration(days: rawDays.length)),
+        title: JsonUtils.asString(dj['title'], 'Day ${rawDays.length + 1}'),
         summary: JsonUtils.asString(dj['summary']),
         stops: stops,
       ));
     }
 
-    if (days.isEmpty) return null;
+    if (rawDays.isEmpty) return null;
+    final days = TripEstimator.schedule(rawDays);
+    final cost = TripEstimator.total(days, pace: req.pace);
     return Trip(
       id: '',
       userId: userId,
@@ -149,6 +175,8 @@ Spread the stops across morning, afternoon and evening, cluster nearby places to
       days: days,
       aiGenerated: true,
       coverPhoto: days.first.stops.first.photo,
+      estimatedCost: cost,
+      budgetCap: req.budgetCap,
       notes: 'Generated by Gemini for ${req.interests.isEmpty ? 'your trip' : req.interests.join(', ')}.',
       createdAt: DateTime.now(),
     );

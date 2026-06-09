@@ -21,6 +21,7 @@ class Spot {
   final bool isFree;
   final bool familyFriendly;
   final bool hiddenGem;
+  final bool featured;
   final String bestTimeToVisit;
   final List<String> tags;
   final SpotStatus status;
@@ -49,6 +50,7 @@ class Spot {
     this.isFree = false,
     this.familyFriendly = false,
     this.hiddenGem = false,
+    this.featured = false,
     this.bestTimeToVisit = '',
     this.tags = const [],
     this.status = SpotStatus.pending,
@@ -83,6 +85,7 @@ class Spot {
       isFree: JsonUtils.asBool(json['isFree']),
       familyFriendly: JsonUtils.asBool(json['familyFriendly']),
       hiddenGem: JsonUtils.asBool(json['hiddenGem']),
+      featured: JsonUtils.asBool(json['featured']),
       bestTimeToVisit: JsonUtils.asString(json['bestTimeToVisit']),
       tags: JsonUtils.asStringList(json['tags']),
       status: SpotStatus.fromString(JsonUtils.asStringOrNull(json['status'])),
@@ -112,6 +115,7 @@ class Spot {
         'isFree': isFree,
         'familyFriendly': familyFriendly,
         'hiddenGem': hiddenGem,
+        'featured': featured,
         'bestTimeToVisit': bestTimeToVisit,
         'tags': tags,
         'status': status.value,
@@ -140,6 +144,7 @@ class Spot {
     bool? isFree,
     bool? familyFriendly,
     bool? hiddenGem,
+    bool? featured,
     String? bestTimeToVisit,
     List<String>? tags,
     SpotStatus? status,
@@ -165,6 +170,7 @@ class Spot {
       isFree: isFree ?? this.isFree,
       familyFriendly: familyFriendly ?? this.familyFriendly,
       hiddenGem: hiddenGem ?? this.hiddenGem,
+      featured: featured ?? this.featured,
       bestTimeToVisit: bestTimeToVisit ?? this.bestTimeToVisit,
       tags: tags ?? this.tags,
       status: status ?? this.status,

@@ -4,6 +4,7 @@ import '../../models/notification_item.dart';
 import '../../models/review.dart';
 import '../../models/spot.dart';
 import '../../models/trip.dart';
+import '../../services/ai/trip_estimator.dart';
 
 /// Realistic demo content loaded the first time the app runs on the local
 /// backend, so every screen (feed, map, trips, admin queue, notifications)
@@ -40,7 +41,7 @@ class DemoSeed {
           id: 'u_contributor',
           name: 'Karim Hassan',
           email: 'contributor@spotwise.app',
-          role: UserRole.contributor,
+          role: UserRole.user,
           photoUrl: photo('avatar-karim'),
           interests: const ['Hidden gems', 'Food', 'Markets'],
           homeCity: 'Cairo',
@@ -55,6 +56,47 @@ class DemoSeed {
           interests: const ['Moderation'],
           homeCity: 'Berlin',
           createdAt: _daysAgo(200),
+        ),
+        AppUser(
+          id: 'u_sofia',
+          name: 'Sofia Lindqvist',
+          email: 'sofia@spotwise.app',
+          role: UserRole.user,
+          photoUrl: photo('avatar-sofia'),
+          interests: const ['Art', 'Coffee', 'Nightlife'],
+          homeCity: 'Paris',
+          createdAt: _daysAgo(64),
+        ),
+        AppUser(
+          id: 'u_marco',
+          name: 'Marco Bianchi',
+          email: 'marco@spotwise.app',
+          role: UserRole.user,
+          photoUrl: photo('avatar-marco'),
+          interests: const ['Food', 'History'],
+          homeCity: 'Rome',
+          createdAt: _daysAgo(48),
+        ),
+        AppUser(
+          id: 'u_lukas',
+          name: 'Lukas Weber',
+          email: 'lukas@spotwise.app',
+          role: UserRole.user,
+          photoUrl: photo('avatar-lukas'),
+          interests: const ['Nature', 'Adventure'],
+          homeCity: 'Berlin',
+          createdAt: _daysAgo(20),
+        ),
+        AppUser(
+          id: 'u_aisha',
+          name: 'Aisha Khan',
+          email: 'aisha@spotwise.app',
+          role: UserRole.user,
+          photoUrl: photo('avatar-aisha'),
+          interests: const ['Markets', 'Food'],
+          homeCity: 'Cairo',
+          suspended: true,
+          createdAt: _daysAgo(12),
         ),
       ];
 
@@ -73,6 +115,7 @@ class DemoSeed {
     bool free = false,
     bool family = false,
     bool gem = false,
+    bool featured = false,
     String best = '',
     List<String> tags = const [],
     SpotStatus status = SpotStatus.approved,
@@ -97,6 +140,7 @@ class DemoSeed {
       isFree: free,
       familyFriendly: family,
       hiddenGem: gem,
+      featured: featured,
       bestTimeToVisit: best,
       tags: tags,
       status: status,
@@ -116,7 +160,7 @@ class DemoSeed {
           id: 's_pyramids', name: 'Pyramids of Giza', city: 'Cairo', country: 'Egypt',
           category: 'landmark', lat: 29.9792, lng: 31.1342,
           desc: 'The last surviving wonder of the ancient world. Go at opening time to beat the heat and the crowds, then ride out into the desert for the classic three-pyramid panorama.',
-          rating: 4.9, reviews: 1284, price: PriceRange.budget, family: true,
+          rating: 4.9, reviews: 1284, price: PriceRange.budget, family: true, featured: true,
           best: 'Early morning', tags: const ['UNESCO', 'Iconic', 'Desert'], likes: 980, saves: 1520, ageDays: 80,
         ),
         _spot(
@@ -202,7 +246,7 @@ class DemoSeed {
           id: 's_eiffel', name: 'Eiffel Tower', city: 'Paris', country: 'France',
           category: 'landmark', lat: 48.8584, lng: 2.2945,
           desc: 'The grande dame of Paris. Watch from the Champ de Mars as she sparkles for five minutes on the hour after dark.',
-          rating: 4.8, reviews: 1530, price: PriceRange.moderate, family: true,
+          rating: 4.8, reviews: 1530, price: PriceRange.moderate, family: true, featured: true,
           best: 'After dark', tags: const ['Iconic', 'Romantic'], likes: 1200, saves: 1340, ageDays: 78,
         ),
         _spot(
@@ -231,7 +275,7 @@ class DemoSeed {
           id: 's_colosseum', name: 'Colosseum', city: 'Rome', country: 'Italy',
           category: 'landmark', lat: 41.8902, lng: 12.4922,
           desc: 'The mighty amphitheatre of ancient Rome. Book a skip-the-line slot and add the underground tour to stand where gladiators waited.',
-          rating: 4.8, reviews: 1340, price: PriceRange.moderate, family: true,
+          rating: 4.8, reviews: 1340, price: PriceRange.moderate, family: true, featured: true,
           best: 'First slot of the day', tags: const ['UNESCO', 'History', 'Must-see'], likes: 990, saves: 1050, ageDays: 72,
         ),
         _spot(
@@ -291,11 +335,25 @@ class DemoSeed {
 
   static List<Trip> trips() {
     final start = DateTime.now().add(const Duration(days: 21));
-    TripStop stop(String spotId, String name, String cat, double lat, double lng, DayPart part, String time, String note) =>
-        TripStop(spotId: spotId, name: name, photo: photo('$spotId-1'), categoryId: cat, lat: lat, lng: lng, dayPart: part, suggestedTime: time, note: note);
+    final spotById = {for (final s in spots()) s.id: s};
+    TripStop stop(String spotId, String name, String cat, double lat, double lng, DayPart part, String time, String note) {
+      final s = spotById[spotId];
+      return TripStop(
+        spotId: spotId,
+        name: name,
+        photo: photo('$spotId-1'),
+        categoryId: cat,
+        lat: lat,
+        lng: lng,
+        dayPart: part,
+        suggestedTime: time,
+        note: note,
+        estimatedCost: s != null ? TripEstimator.stopCost(s) : 0,
+        durationMinutes: TripEstimator.durationMinutes(cat),
+      );
+    }
 
-    return [
-      Trip(
+    final cairo = Trip(
         id: 't_cairo_demo',
         userId: 'u_traveller',
         destination: 'Cairo',
@@ -341,8 +399,8 @@ class DemoSeed {
             ],
           ),
         ],
-      ),
-    ];
+    );
+    return [cairo.copyWith(estimatedCost: TripEstimator.total(cairo.days))];
   }
 
   static List<NotificationItem> notifications() => [

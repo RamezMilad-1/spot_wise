@@ -25,6 +25,7 @@ class AiPlannerProvider extends ChangeNotifier {
   final Set<String> interests = {'Food', 'Views'};
   PriceRange budget = PriceRange.moderate;
   TripPace pace = TripPace.balanced;
+  double? budgetCap;
 
   bool _generating = false;
   String? _error;
@@ -76,6 +77,11 @@ class AiPlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setBudgetCap(double? value) {
+    budgetCap = (value != null && value > 0) ? value : null;
+    notifyListeners();
+  }
+
   Future<bool> generate(List<Spot> spots) async {
     if (!canGenerate) {
       _error = 'Tell us where you\'re going first.';
@@ -97,6 +103,7 @@ class AiPlannerProvider extends ChangeNotifier {
         interests: interests.toList(),
         budget: budget,
         pace: pace,
+        budgetCap: budgetCap,
       );
       _result = await services.ai.generateItinerary(
         request: request,

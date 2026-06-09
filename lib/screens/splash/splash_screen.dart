@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
-import '../../providers/auth_provider.dart';
 import '../../widgets/app_logo.dart';
 
 /// Animated splash that decides where to send the user: onboarding → auth →
@@ -35,10 +33,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final prefs = await SharedPreferences.getInstance();
     final onboarded = prefs.getBool('onboarding_done') ?? false;
     if (!mounted) return;
-    final auth = context.read<AuthProvider>();
-    final next = !onboarded
-        ? AppRoutes.onboarding
-        : (auth.isLoggedIn ? AppRoutes.home : AppRoutes.login);
+    // The app opens straight into the shell — guests browse freely and are
+    // only asked to sign in when an action needs it.
+    final next = onboarded ? AppRoutes.home : AppRoutes.onboarding;
     Navigator.pushReplacementNamed(context, next);
   }
 

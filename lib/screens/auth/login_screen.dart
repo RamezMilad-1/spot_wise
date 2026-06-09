@@ -24,8 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
 
   static const _demos = [
-    ('Traveller', 'demo@spotwise.app', Icons.explore_outlined),
-    ('Contributor', 'contributor@spotwise.app', Icons.add_location_alt_outlined),
+    ('Explorer', 'demo@spotwise.app', Icons.explore_outlined),
     ('Admin', 'admin@spotwise.app', Icons.verified_user_outlined),
   ];
 
@@ -43,7 +42,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final ok = await auth.signIn(_email.text.trim(), _password.text);
     if (!mounted) return;
     if (ok) {
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+      // Resume the gated flow we came from, else land on the app shell.
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context, true);
+      } else {
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+      }
     } else {
       AppSnackbar.error(context, auth.error ?? 'Could not sign in.');
     }

@@ -15,6 +15,13 @@ class TripStop {
   final String note;
   final String suggestedTime;
 
+  /// Estimated per-person spend at this stop (USD), derived from the spot's
+  /// price tier + category by the trip estimator.
+  final double estimatedCost;
+
+  /// Estimated visit length in minutes (drives scheduling + the timeline).
+  final int durationMinutes;
+
   const TripStop({
     required this.spotId,
     required this.name,
@@ -25,6 +32,8 @@ class TripStop {
     this.dayPart = DayPart.morning,
     this.note = '',
     this.suggestedTime = '',
+    this.estimatedCost = 0,
+    this.durationMinutes = 0,
   });
 
   LatLng get latLng => LatLng(lat, lng);
@@ -39,6 +48,8 @@ class TripStop {
         dayPart: DayPart.fromString(JsonUtils.asStringOrNull(json['dayPart'])),
         note: JsonUtils.asString(json['note']),
         suggestedTime: JsonUtils.asString(json['suggestedTime']),
+        estimatedCost: JsonUtils.asDouble(json['estimatedCost']),
+        durationMinutes: JsonUtils.asInt(json['durationMinutes']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -51,9 +62,17 @@ class TripStop {
         'dayPart': dayPart.value,
         'note': note,
         'suggestedTime': suggestedTime,
+        'estimatedCost': estimatedCost,
+        'durationMinutes': durationMinutes,
       };
 
-  TripStop copyWith({DayPart? dayPart, String? note, String? suggestedTime}) =>
+  TripStop copyWith({
+    DayPart? dayPart,
+    String? note,
+    String? suggestedTime,
+    double? estimatedCost,
+    int? durationMinutes,
+  }) =>
       TripStop(
         spotId: spotId,
         name: name,
@@ -64,6 +83,8 @@ class TripStop {
         dayPart: dayPart ?? this.dayPart,
         note: note ?? this.note,
         suggestedTime: suggestedTime ?? this.suggestedTime,
+        estimatedCost: estimatedCost ?? this.estimatedCost,
+        durationMinutes: durationMinutes ?? this.durationMinutes,
       );
 }
 
@@ -127,6 +148,15 @@ class Trip {
   final String? coverPhoto;
   final DateTime createdAt;
 
+  /// Estimated total trip cost (USD): stop spend + daily meals & transport.
+  final double estimatedCost;
+
+  /// Optional max budget the traveller set (USD). Null = no cap.
+  final double? budgetCap;
+
+  /// ISO-ish currency label for display (defaults to USD).
+  final String currency;
+
   const Trip({
     required this.id,
     required this.userId,
@@ -142,6 +172,9 @@ class Trip {
     this.completed = false,
     this.coverPhoto,
     required this.createdAt,
+    this.estimatedCost = 0,
+    this.budgetCap,
+    this.currency = 'USD',
   });
 
   int get dayCount => days.isNotEmpty
@@ -149,6 +182,9 @@ class Trip {
       : (endDate.difference(startDate).inDays + 1).clamp(1, 365);
   int get stopCount => days.fold(0, (sum, d) => sum + d.stops.length);
   LatLng? get latLng => (lat != null && lng != null) ? LatLng(lat!, lng!) : null;
+
+  /// True when an estimate exists and exceeds the traveller's cap.
+  bool get overBudget => budgetCap != null && estimatedCost > budgetCap!;
 
   factory Trip.fromJson(String id, Map<dynamic, dynamic> json) {
     return Trip(
@@ -166,6 +202,9 @@ class Trip {
       completed: JsonUtils.asBool(json['completed']),
       coverPhoto: JsonUtils.asStringOrNull(json['coverPhoto']),
       createdAt: JsonUtils.asDate(json['createdAt']),
+      estimatedCost: JsonUtils.asDouble(json['estimatedCost']),
+      budgetCap: json['budgetCap'] == null ? null : JsonUtils.asDouble(json['budgetCap']),
+      currency: JsonUtils.asString(json['currency'], 'USD'),
     );
   }
 
@@ -183,6 +222,9 @@ class Trip {
         'completed': completed,
         'coverPhoto': coverPhoto,
         'createdAt': createdAt.millisecondsSinceEpoch,
+        'estimatedCost': estimatedCost,
+        'budgetCap': budgetCap,
+        'currency': currency,
       };
 
   Trip copyWith({
@@ -194,6 +236,9 @@ class Trip {
     String? notes,
     bool? completed,
     String? coverPhoto,
+    double? estimatedCost,
+    double? budgetCap,
+    String? currency,
   }) {
     return Trip(
       id: id,
@@ -210,6 +255,9 @@ class Trip {
       completed: completed ?? this.completed,
       coverPhoto: coverPhoto ?? this.coverPhoto,
       createdAt: createdAt,
+      estimatedCost: estimatedCost ?? this.estimatedCost,
+      budgetCap: budgetCap ?? this.budgetCap,
+      currency: currency ?? this.currency,
     );
   }
 }

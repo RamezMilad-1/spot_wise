@@ -1,19 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../models/enums.dart';
 import '../../models/spot_filter.dart';
 import '../../providers/category_store.dart';
-import '../../providers/map_provider.dart';
 import '../../widgets/app_button.dart';
 
-/// Bottom-sheet filter editor for the discovery map.
+/// Reusable bottom-sheet filter editor. Used by both the discovery map and the
+/// home feed — it returns the edited filter via [onApply] rather than writing to
+/// any single provider.
 class FilterSheet extends StatefulWidget {
   final SpotFilter initial;
   final bool hasLocation;
+  final ValueChanged<SpotFilter> onApply;
 
-  const FilterSheet({super.key, required this.initial, required this.hasLocation});
+  const FilterSheet({
+    super.key,
+    required this.initial,
+    required this.onApply,
+    this.hasLocation = false,
+  });
 
   @override
   State<FilterSheet> createState() => _FilterSheetState();
@@ -71,17 +79,30 @@ class _FilterSheetState extends State<FilterSheet> {
                         ],
                       ),
                       _label('Minimum rating'),
-                      Wrap(
-                        spacing: AppSpacing.sm,
+                      Row(
                         children: [
-                          for (final r in const [0.0, 3.0, 4.0, 4.5])
-                            ChoiceChip(
-                              label: Text(r == 0 ? 'Any' : '$r+'),
-                              selected: _f.minRating == r,
-                              onSelected: (_) => setState(() => _f = _f.copyWith(minRating: r)),
+                          for (var i = 1; i <= 5; i++)
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              tooltip: '$i star${i > 1 ? 's' : ''} & up',
+                              onPressed: () =>
+                                  setState(() => _f = _f.copyWith(minRating: i.toDouble())),
+                              icon: Icon(
+                                i <= _f.minRating ? Icons.star_rounded : Icons.star_border_rounded,
+                                color: AppColors.amber,
+                              ),
+                            ),
+                          const Spacer(),
+                          if (_f.minRating > 0)
+                            TextButton(
+                              onPressed: () => setState(() => _f = _f.copyWith(minRating: 0)),
+                              child: const Text('Any'),
                             ),
                         ],
                       ),
+                      if (_f.minRating > 0)
+                        Text('${_f.minRating.toStringAsFixed(0)}★ & up',
+                            style: Theme.of(context).textTheme.bodySmall),
                       _label('Price'),
                       Wrap(
                         spacing: AppSpacing.sm,
@@ -145,7 +166,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 'Show results',
                 icon: Icons.check_rounded,
                 onPressed: () {
-                  context.read<MapProvider>().setFilter(_f);
+                  widget.onApply(_f);
                   Navigator.pop(context);
                 },
               ),

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../providers/auth_provider.dart';
 import '../../widgets/app_button.dart';
 
 class _Page {
@@ -44,8 +42,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_done', true);
     if (!mounted) return;
-    final loggedIn = context.read<AuthProvider>().isLoggedIn;
-    Navigator.pushReplacementNamed(context, loggedIn ? AppRoutes.home : AppRoutes.login);
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
   @override

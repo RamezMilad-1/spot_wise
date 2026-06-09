@@ -16,6 +16,8 @@ class AppRoutes {
   // Spots
   static const String spotDetails = '/spot';
   static const String addSpot = '/add-spot';
+  static const String editSpot = '/edit-spot';
+  static const String mySpots = '/my-spots';
   static const String addReview = '/add-review';
 
   // Discovery
@@ -40,6 +42,8 @@ class AppRoutes {
   static const String adminPending = '/admin/pending';
   static const String adminReports = '/admin/reports';
   static const String adminCategories = '/admin/categories';
+  static const String adminSpots = '/admin/spots';
+  static const String adminUsers = '/admin/users';
 
   // Profile / settings
   static const String profile = '/profile';

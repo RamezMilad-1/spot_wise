@@ -217,5 +217,15 @@ class FirebaseRestBackendService implements BackendService {
   }
 
   @override
+  Future<List<AppUser>> getUsers() async {
+    final list = _mapCollection(await _getCollection('users'), AppUser.fromJson);
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
+  }
+
+  @override
   Future<void> saveUser(AppUser user) => _put('users/${user.id}', user.toJson());
+
+  @override
+  Future<void> deleteUser(String id) => _delete('users/$id');
 }

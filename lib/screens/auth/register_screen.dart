@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/validators.dart';
-import '../../models/enums.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
@@ -23,7 +22,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
-  UserRole _role = UserRole.user;
 
   @override
   void dispose() {
@@ -42,11 +40,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _name.text.trim(),
       _email.text.trim(),
       _password.text,
-      role: _role,
     );
     if (!mounted) return;
     if (ok) {
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+      // Resume the gated flow we came from, else land on the app shell.
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context, true);
+      } else {
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+      }
     } else {
       AppSnackbar.error(context, auth.error ?? 'Could not create account.');
     }
@@ -105,28 +107,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (v) => Validators.confirmPassword(v, _password.text),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                Text('I want to', style: text.labelLarge),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    _RoleCard(
-                      role: UserRole.user,
-                      title: 'Explore',
-                      subtitle: 'Discover & plan trips',
-                      selected: _role == UserRole.user,
-                      onTap: () => setState(() => _role = UserRole.user),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    _RoleCard(
-                      role: UserRole.contributor,
-                      title: 'Contribute',
-                      subtitle: 'Also add new spots',
-                      selected: _role == UserRole.contributor,
-                      onTap: () => setState(() => _role = UserRole.contributor),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
                 Consumer<AuthProvider>(
                   builder: (_, auth, _) => AppButton(
                     'Create account',
@@ -136,54 +116,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleCard extends StatelessWidget {
-  final UserRole role;
-  final String title;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _RoleCard({
-    required this.role,
-    required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.brMd,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            color: selected ? scheme.primaryContainer : scheme.surface,
-            borderRadius: AppRadius.brMd,
-            border: Border.all(
-              color: selected ? scheme.primary : scheme.outline,
-              width: selected ? 1.8 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(role.icon, color: selected ? scheme.primary : scheme.onSurfaceVariant),
-              const SizedBox(height: AppSpacing.sm),
-              Text(title, style: Theme.of(context).textTheme.titleSmall),
-              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-            ],
           ),
         ),
       ),

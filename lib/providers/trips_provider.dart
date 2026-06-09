@@ -4,6 +4,7 @@ import '../core/utils/error_handler.dart';
 import '../models/enums.dart';
 import '../models/spot.dart';
 import '../models/trip.dart';
+import '../services/ai/trip_estimator.dart';
 import '../services/service_locator.dart';
 
 /// Loads the signed-in user's trips and provides the day-by-day editor
@@ -81,9 +82,11 @@ class TripsProvider extends ChangeNotifier {
       lng: spot.lng,
       dayPart: _nextPart(days[index].stops.length),
       note: spot.bestTimeToVisit.isEmpty ? '' : 'Best around ${spot.bestTimeToVisit.toLowerCase()}.',
+      estimatedCost: TripEstimator.stopCost(spot),
+      durationMinutes: TripEstimator.durationMinutes(spot.categoryId),
     );
     days[index] = days[index].copyWith(stops: [...days[index].stops, stop]);
-    await _persist(trip.copyWith(days: days));
+    await _persistStructure(trip, days);
   }
 
   Future<void> removeStop(Trip trip, int dayNumber, int stopIndex) async {
@@ -94,7 +97,7 @@ class TripsProvider extends ChangeNotifier {
     if (stopIndex < 0 || stopIndex >= stops.length) return;
     stops.removeAt(stopIndex);
     days[di] = days[di].copyWith(stops: stops);
-    await _persist(trip.copyWith(days: days));
+    await _persistStructure(trip, days);
   }
 
   Future<void> reorderStops(Trip trip, int dayNumber, int oldIndex, int newIndex) async {
@@ -106,18 +109,26 @@ class TripsProvider extends ChangeNotifier {
     final item = stops.removeAt(oldIndex);
     stops.insert(newIndex, item);
     days[di] = days[di].copyWith(stops: stops);
-    await _persist(trip.copyWith(days: days));
+    await _persistStructure(trip, days);
   }
 
   Future<void> addDay(Trip trip) async {
     final nextNumber = trip.days.isEmpty ? 1 : trip.days.last.dayNumber + 1;
     final date = trip.startDate.add(Duration(days: nextNumber - 1));
     final days = [...trip.days, TripDay(dayNumber: nextNumber, date: date)];
-    await _persist(trip.copyWith(days: days));
+    await _persistStructure(trip, days);
   }
 
   Future<void> updateNotes(Trip trip, String notes) =>
       _persist(trip.copyWith(notes: notes));
+
+  /// Persist a structural change (stops/days), re-stamping accurate times and a
+  /// fresh budget estimate via [TripEstimator].
+  Future<void> _persistStructure(Trip trip, List<TripDay> days) async {
+    final scheduled = TripEstimator.schedule(days);
+    final cost = TripEstimator.total(scheduled);
+    await _persist(trip.copyWith(days: scheduled, estimatedCost: cost));
+  }
 
   Future<void> _persist(Trip updated) async {
     await services.backend.saveTrip(updated);

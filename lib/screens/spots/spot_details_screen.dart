@@ -7,6 +7,7 @@ import '../../core/config/app_config.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/auth_gate.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/spot.dart';
 import '../../providers/auth_provider.dart';
@@ -44,6 +45,12 @@ class _SpotDetailsView extends StatelessWidget {
     }
   }
 
+  Future<void> _toggleSave(BuildContext context, String spotId) async {
+    if (await ensureLoggedIn(context) && context.mounted) {
+      context.read<AuthProvider>().toggleSave(spotId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final detailsP = context.watch<SpotDetailsProvider>();
@@ -63,12 +70,18 @@ class _SpotDetailsView extends StatelessWidget {
               IconButton(
                 icon: Icon(saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                     color: AppColors.coral),
-                onPressed: auth.isLoggedIn ? () => auth.toggleSave(spot.id) : null,
+                onPressed: () => _toggleSave(context, spot.id),
               ),
               IconButton(
                 icon: const Icon(Icons.flag_outlined),
                 onPressed: () => _report(context),
               ),
+              if (auth.user?.isAdmin ?? false)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Edit spot',
+                  onPressed: () => Navigator.pushNamed(context, AppRoutes.editSpot, arguments: spot),
+                ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: _PhotoCarousel(photos: spot.photos),
@@ -148,14 +161,14 @@ class _SpotDetailsView extends StatelessWidget {
       ),
       bottomNavigationBar: _BottomBar(
         saved: saved,
-        canSave: auth.isLoggedIn,
-        onSave: () => auth.toggleSave(spot.id),
+        onSave: () => _toggleSave(context, spot.id),
         onAddToTrip: () => _addToTrip(context, spot),
       ),
     );
   }
 
   Future<void> _writeReview(BuildContext context) async {
+    if (!await ensureLoggedIn(context) || !context.mounted) return;
     final detailsP = context.read<SpotDetailsProvider>();
     final result = await Navigator.pushNamed(context, AppRoutes.addReview, arguments: detailsP.spot);
     if (result is (double, String, List<String>)) {
@@ -192,6 +205,7 @@ class _SpotDetailsView extends StatelessWidget {
   }
 
   Future<void> _addToTrip(BuildContext context, Spot spot) async {
+    if (!await ensureLoggedIn(context) || !context.mounted) return;
     final tripsP = context.read<TripsProvider>();
     await tripsP.load();
     if (!context.mounted) return;
@@ -427,13 +441,11 @@ class _ReviewsSliver extends StatelessWidget {
 
 class _BottomBar extends StatelessWidget {
   final bool saved;
-  final bool canSave;
   final VoidCallback onSave;
   final VoidCallback onAddToTrip;
 
   const _BottomBar({
     required this.saved,
-    required this.canSave,
     required this.onSave,
     required this.onAddToTrip,
   });
@@ -449,7 +461,7 @@ class _BottomBar extends StatelessWidget {
               child: AppButton.outline(
                 saved ? 'Saved' : 'Save',
                 icon: saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                onPressed: canSave ? onSave : null,
+                onPressed: onSave,
               ),
             ),
             const SizedBox(width: AppSpacing.md),

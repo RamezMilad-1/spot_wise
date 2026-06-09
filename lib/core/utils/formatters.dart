@@ -41,6 +41,20 @@ class Formatters {
 
   static String rating(double r) => r.toStringAsFixed(1);
 
+  /// Whole-dollar money for budget displays, e.g. `$240`.
+  static String money(double amount, {String symbol = r'$'}) =>
+      '$symbol${amount.round()}';
+
+  /// Compact visit duration, e.g. `1h 30m`, `45m`.
+  static String duration(int minutes) {
+    if (minutes <= 0) return '';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0) return '${m}m';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}m';
+  }
+
   static String count(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';

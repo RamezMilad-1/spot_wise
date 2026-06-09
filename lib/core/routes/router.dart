@@ -15,13 +15,17 @@ import '../../screens/favorites/favorites_screen.dart';
 import '../../screens/integrations/integrations_screen.dart';
 import '../../screens/notifications/notifications_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
+import '../../screens/admin/admin_spots_screen.dart';
+import '../../screens/admin/admin_users_screen.dart';
 import '../../screens/profile/edit_profile_screen.dart';
+import '../../screens/profile/profile_screen.dart';
 import '../../screens/profile/settings_screen.dart';
 import '../../screens/search/search_screen.dart';
 import '../../screens/shell/home_shell.dart';
 import '../../screens/splash/splash_screen.dart';
 import '../../screens/spots/add_review_screen.dart';
 import '../../screens/spots/add_spot_screen.dart';
+import '../../screens/spots/my_spots_screen.dart';
 import '../../screens/spots/spot_details_screen.dart';
 import '../../screens/trips/create_trip_screen.dart';
 import '../../screens/trips/trip_details_screen.dart';
@@ -43,6 +47,8 @@ class AppRouter {
       AppRoutes.search => const SearchScreen(),
       AppRoutes.spotDetails => SpotDetailsScreen(spot: args as Spot),
       AppRoutes.addSpot => const AddSpotScreen(),
+      AppRoutes.editSpot => AddSpotScreen(existing: args as Spot),
+      AppRoutes.mySpots => const MySpotsScreen(),
       AppRoutes.addReview => AddReviewScreen(spot: args as Spot),
       AppRoutes.favorites => const FavoritesScreen(),
       AppRoutes.tripDetails => TripDetailsScreen(trip: args as Trip),
@@ -53,6 +59,9 @@ class AppRouter {
       AppRoutes.adminPending => const AdminPendingScreen(),
       AppRoutes.adminReports => const AdminReportsScreen(),
       AppRoutes.adminCategories => const AdminCategoriesScreen(),
+      AppRoutes.adminSpots => const AdminSpotsScreen(),
+      AppRoutes.adminUsers => const AdminUsersScreen(),
+      AppRoutes.profile => const ProfileScreen(),
       AppRoutes.editProfile => const EditProfileScreen(),
       AppRoutes.settings => const SettingsScreen(),
       AppRoutes.integrations => const IntegrationsScreen(),

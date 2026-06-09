@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/auth_gate.dart';
 import '../../models/spot.dart';
 import '../../models/spot_filter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/category_store.dart';
-import '../../providers/map_provider.dart';
 import '../../providers/spots_provider.dart';
+import '../../widgets/app_menu_button.dart';
+import '../../widgets/location_picker_sheet.dart';
 import '../../widgets/network_photo.dart';
 import '../../widgets/notification_bell.dart';
 import '../../widgets/offline_banner.dart';
@@ -17,19 +21,66 @@ import '../../widgets/section_header.dart';
 import '../../widgets/skeletons.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/state_views.dart';
+import '../map/filter_sheet.dart';
 import '../shell/home_shell.dart';
 
-class HomeFeedScreen extends StatelessWidget {
+class HomeFeedScreen extends StatefulWidget {
   const HomeFeedScreen({super.key});
 
-  void _openCategory(BuildContext context, String categoryId) {
-    context.read<MapProvider>().setFilter(SpotFilter(categoryIds: {categoryId}));
-    context.read<HomeTab>().go(1);
+  @override
+  State<HomeFeedScreen> createState() => _HomeFeedScreenState();
+}
+
+class _HomeFeedScreenState extends State<HomeFeedScreen> {
+  static const Distance _distance = Distance();
+
+  SpotFilter _filter = const SpotFilter();
+  LatLng? _origin;
+  String? _placeLabel;
+
+  void _toggleCategory(String categoryId) {
+    final ids = {..._filter.categoryIds};
+    ids.contains(categoryId) ? ids.remove(categoryId) : ids.add(categoryId);
+    setState(() => _filter = _filter.copyWith(categoryIds: ids));
   }
 
-  Future<void> _openSearch(BuildContext context) async {
+  Future<void> _pickLocation() async {
+    final picked = await pickLocation(context);
+    if (picked != null && mounted) {
+      setState(() {
+        _origin = picked.$1;
+        _placeLabel = picked.$2;
+      });
+    }
+  }
+
+  void _clearLocation() => setState(() {
+        _origin = null;
+        _placeLabel = null;
+      });
+
+  double _distM(Spot s) => _distance.as(LengthUnit.Meter, _origin!, s.latLng);
+
+  Future<void> _openFilters() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => FilterSheet(
+        initial: _filter,
+        onApply: (f) => setState(() => _filter = f),
+      ),
+    );
+  }
+
+  Future<void> _openSearch() async {
     final result = await Navigator.pushNamed(context, AppRoutes.search);
-    if (result == 'map' && context.mounted) context.read<HomeTab>().go(1);
+    if (result == 'map' && mounted) context.read<HomeTab>().go(1);
+  }
+
+  Future<void> _toggleSave(Spot spot) async {
+    if (await ensureLoggedIn(context) && mounted) {
+      context.read<AuthProvider>().toggleSave(spot.id);
+    }
   }
 
   @override
@@ -41,7 +92,7 @@ class HomeFeedScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: AppSpacing.lg,
+        leading: const AppMenuButton(),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -56,6 +107,15 @@ class HomeFeedScreen extends StatelessWidget {
               tooltip: 'Admin',
               onPressed: () => Navigator.pushNamed(context, AppRoutes.adminDashboard),
             ),
+          IconButton(
+            tooltip: 'Filter',
+            icon: Badge(
+              isLabelVisible: _filter.activeCount > 0,
+              label: Text('${_filter.activeCount}'),
+              child: const Icon(Icons.tune_rounded),
+            ),
+            onPressed: _openFilters,
+          ),
           const NotificationBell(),
           const SizedBox(width: AppSpacing.xs),
         ],
@@ -73,7 +133,16 @@ class HomeFeedScreen extends StatelessWidget {
       return ErrorView(message: spotsP.error!, onRetry: () => spotsP.load(force: true));
     }
 
+    final hasLocation = _origin != null;
+    final filtering = _filter.isActive;
+    final activeMode = hasLocation || filtering;
+
+    var results = spotsP.spots.where((s) => _filter.matches(s)).toList();
+    if (hasLocation) {
+      results.sort((a, b) => _distM(a).compareTo(_distM(b)));
+    }
     final recommended = spotsP.recommendationsFor(auth.user, limit: 8);
+    final featured = spotsP.featured;
 
     return ListView(
       padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
@@ -81,51 +150,167 @@ class HomeFeedScreen extends StatelessWidget {
         const OfflineBanner(),
         Padding(
           padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
-          child: _SearchBarButton(onTap: () => _openSearch(context)),
+          child: _SearchBarButton(onTap: _openSearch),
         ),
-        _CategoryStrip(onTap: (id) => _openCategory(context, id)),
-        if (recommended.isNotEmpty) ...[
-          SectionHeader(
-            title: 'Recommended for you',
-            subtitle: auth.user?.interests.isNotEmpty == true
-                ? 'Based on ${auth.user!.interests.take(2).join(' & ').toLowerCase()}'
-                : 'Top-rated places to start',
-          ),
-          SizedBox(
-            height: 248,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: recommended.length,
-              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-              itemBuilder: (_, i) => _MiniSpotCard(spot: recommended[i]),
+        _CategoryStrip(selected: _filter.categoryIds, onToggle: _toggleCategory),
+        _LocationBar(label: _placeLabel, onTap: _pickLocation, onClear: _clearLocation),
+
+        if (activeMode) ...[
+          if (hasLocation)
+            SectionHeader(
+              title: 'Closest near $_placeLabel',
+              subtitle: '${results.length} ${results.length == 1 ? 'spot' : 'spots'} · sorted by distance'
+                  '${filtering ? ' · filtered' : ''}',
+            )
+          else
+            _ActiveFilterBar(
+              count: results.length,
+              onClear: () => setState(() => _filter = const SpotFilter()),
             ),
+          if (results.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: EmptyView(
+                icon: Icons.filter_alt_off_rounded,
+                title: 'No matches',
+                message: 'Try another category, a wider area, or clear your filters.',
+              ),
+            )
+          else
+            ...results.map((spot) =>
+                _spotCard(context, spot, auth, distance: hasLocation ? _distM(spot) : null)),
+        ] else ...[
+          if (featured.isNotEmpty) ...[
+            const SectionHeader(
+              title: 'Featured',
+              subtitle: 'Hand-picked by the SpotWise team',
+            ),
+            _MiniRail(spots: featured),
+          ],
+          if (recommended.isNotEmpty) ...[
+            SectionHeader(
+              title: 'Recommended for you',
+              subtitle: auth.user?.interests.isNotEmpty == true
+                  ? 'Based on ${auth.user!.interests.take(2).join(' & ').toLowerCase()}'
+                  : 'Top-rated places to start',
+            ),
+            _MiniRail(spots: recommended),
+          ],
+          SectionHeader(
+            title: 'Explore spots',
+            subtitle: '${spotsP.spots.length} community-approved places',
+          ),
+          if (spotsP.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: EmptyView(
+                icon: Icons.travel_explore_rounded,
+                title: 'No spots yet',
+                message: 'Approved community spots will appear here.',
+              ),
+            )
+          else
+            ...results.map((spot) => _spotCard(context, spot, auth)),
+        ],
+      ],
+    );
+  }
+
+  Widget _spotCard(BuildContext context, Spot spot, AuthProvider auth, {double? distance}) => Padding(
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
+        child: SpotCard(
+          spot: spot,
+          isSaved: auth.isSaved(spot.id),
+          onToggleSave: () => _toggleSave(spot),
+          distanceMeters: distance,
+          onTap: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
+        ),
+      );
+}
+
+class _LocationBar extends StatelessWidget {
+  final String? label;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+  const _LocationBar({required this.label, required this.onTap, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0);
+    if (label == null) {
+      return Padding(
+        padding: padding,
+        child: OutlinedButton.icon(
+          onPressed: onTap,
+          icon: const Icon(Icons.near_me_outlined, size: 18),
+          label: const Text('Search a location for nearby spots'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(46),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: padding,
+      child: Material(
+        color: AppColors.tealMist.withValues(alpha: 0.5),
+        borderRadius: AppRadius.brMd,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.brMd,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+            child: Row(
+              children: [
+                const Icon(Icons.place_rounded, size: 18, color: AppColors.tealDark),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Near $label',
+                    style: const TextStyle(color: AppColors.tealDark, fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                InkWell(
+                  onTap: onClear,
+                  customBorder: const CircleBorder(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.close_rounded, size: 18, color: AppColors.tealDark),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveFilterBar extends StatelessWidget {
+  final int count;
+  final VoidCallback onClear;
+  const _ActiveFilterBar({required this.count, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+      child: Row(
+        children: [
+          Text('$count ${count == 1 ? 'result' : 'results'}',
+              style: Theme.of(context).textTheme.titleSmall),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: onClear,
+            icon: const Icon(Icons.close_rounded, size: 18),
+            label: const Text('Clear filters'),
           ),
         ],
-        SectionHeader(
-          title: 'Explore spots',
-          subtitle: '${spotsP.spots.length} community-approved places',
-        ),
-        if (spotsP.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(AppSpacing.xl),
-            child: EmptyView(
-              icon: Icons.travel_explore_rounded,
-              title: 'No spots yet',
-              message: 'Approved community spots will appear here.',
-            ),
-          )
-        else
-          ...spotsP.spots.map((spot) => Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
-                child: SpotCard(
-                  spot: spot,
-                  isSaved: auth.isSaved(spot.id),
-                  onToggleSave: auth.isLoggedIn ? () => auth.toggleSave(spot.id) : null,
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
-                ),
-              )),
-      ],
+      ),
     );
   }
 }
@@ -164,8 +349,9 @@ class _SearchBarButton extends StatelessWidget {
 }
 
 class _CategoryStrip extends StatelessWidget {
-  final ValueChanged<String> onTap;
-  const _CategoryStrip({required this.onTap});
+  final Set<String> selected;
+  final ValueChanged<String> onToggle;
+  const _CategoryStrip({required this.selected, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
@@ -179,8 +365,9 @@ class _CategoryStrip extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (_, i) {
           final c = categories[i];
+          final isSelected = selected.contains(c.id);
           return InkWell(
-            onTap: () => onTap(c.id),
+            onTap: () => onToggle(c.id),
             borderRadius: AppRadius.brMd,
             child: Column(
               children: [
@@ -188,17 +375,40 @@ class _CategoryStrip extends StatelessWidget {
                   width: 54,
                   height: 54,
                   decoration: BoxDecoration(
-                    color: c.color.withValues(alpha: 0.14),
+                    color: isSelected ? c.color : c.color.withValues(alpha: 0.14),
                     borderRadius: AppRadius.brMd,
+                    border: isSelected ? Border.all(color: c.color, width: 2) : null,
                   ),
-                  child: Icon(c.icon, color: c.color),
+                  child: Icon(c.icon, color: isSelected ? Colors.white : c.color),
                 ),
                 const SizedBox(height: 6),
-                Text(c.label, style: Theme.of(context).textTheme.labelMedium),
+                Text(c.label,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: isSelected ? FontWeight.w700 : null,
+                        )),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _MiniRail extends StatelessWidget {
+  final List<Spot> spots;
+  const _MiniRail({required this.spots});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 248,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        itemCount: spots.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
+        itemBuilder: (_, i) => _MiniSpotCard(spot: spots[i]),
       ),
     );
   }

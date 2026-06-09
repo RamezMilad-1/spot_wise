@@ -13,6 +13,9 @@ class AiPlanRequest {
   final PriceRange budget;
   final TripPace pace;
 
+  /// Optional max total budget (USD). Null = no cap.
+  final double? budgetCap;
+
   const AiPlanRequest({
     required this.destination,
     this.country = '',
@@ -23,6 +26,7 @@ class AiPlanRequest {
     this.interests = const [],
     this.budget = PriceRange.moderate,
     this.pace = TripPace.balanced,
+    this.budgetCap,
   });
 
   DateTime get endDate => startDate.add(Duration(days: dayCount - 1));
@@ -37,6 +41,7 @@ class AiPlanRequest {
     List<String>? interests,
     PriceRange? budget,
     TripPace? pace,
+    double? budgetCap,
   }) {
     return AiPlanRequest(
       destination: destination ?? this.destination,
@@ -48,6 +53,7 @@ class AiPlanRequest {
       interests: interests ?? this.interests,
       budget: budget ?? this.budget,
       pace: pace ?? this.pace,
+      budgetCap: budgetCap ?? this.budgetCap,
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../models/spot.dart';
 import '../../providers/admin_provider.dart';
@@ -45,6 +46,25 @@ class AdminPendingScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _edit(BuildContext context, Spot spot) async {
+    await Navigator.pushNamed(context, AppRoutes.editSpot, arguments: spot);
+    if (context.mounted) context.read<AdminProvider>().load();
+  }
+
+  Future<void> _delete(BuildContext context, Spot spot) async {
+    final ok = await showConfirmSheet(
+      context,
+      title: 'Delete “${spot.name}”?',
+      message: 'This permanently removes the submission.',
+      confirmLabel: 'Delete',
+      icon: Icons.delete_outline_rounded,
+      destructive: true,
+    );
+    if (!ok || !context.mounted) return;
+    await context.read<AdminProvider>().deleteSpot(spot);
+    if (context.mounted) AppSnackbar.show(context, '“${spot.name}” deleted.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final adminP = context.watch<AdminProvider>();
@@ -69,6 +89,8 @@ class AdminPendingScreen extends StatelessWidget {
                       spot: adminP.pending[i],
                       onApprove: () => _approve(context, adminP.pending[i]),
                       onReject: () => _reject(context, adminP.pending[i]),
+                      onEdit: () => _edit(context, adminP.pending[i]),
+                      onDelete: () => _delete(context, adminP.pending[i]),
                     ),
                   ),
                 ),
@@ -80,8 +102,16 @@ class _PendingCard extends StatelessWidget {
   final Spot spot;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
-  const _PendingCard({required this.spot, required this.onApprove, required this.onReject});
+  const _PendingCard({
+    required this.spot,
+    required this.onApprove,
+    required this.onReject,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -119,11 +149,26 @@ class _PendingCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Center(
-                  child: TextButton(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
-                    child: const Text('View full details'),
-                  ),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Edit'),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
+                      child: const Text('View'),
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: onDelete,
+                      style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: const Text('Delete'),
+                    ),
+                  ],
                 ),
               ],
             ),

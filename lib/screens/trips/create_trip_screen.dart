@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/auth_gate.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/enums.dart';
 import '../../models/spot.dart';
@@ -49,6 +50,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       AppSnackbar.error(context, 'Where are you headed?');
       return;
     }
+    if (!await ensureLoggedIn(context) || !mounted) return;
     final user = context.read<AuthProvider>().user;
     if (user == null) return;
     final tripsP = context.read<TripsProvider>();

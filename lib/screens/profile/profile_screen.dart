@@ -12,13 +12,6 @@ import '../../widgets/user_avatar.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  Future<void> _signOut(BuildContext context) async {
-    await context.read<AuthProvider>().signOut();
-    if (context.mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -79,44 +72,19 @@ class ProfileScreen extends StatelessWidget {
           ],
           const SizedBox(height: AppSpacing.xl),
           _Tile(
-            icon: Icons.favorite_border_rounded,
-            label: 'Saved spots',
-            onTap: () => Navigator.pushNamed(context, AppRoutes.favorites),
-          ),
-          if (user.canContribute)
-            _Tile(
-              icon: Icons.add_location_alt_outlined,
-              label: 'Add a spot',
-              onTap: () => Navigator.pushNamed(context, AppRoutes.addSpot),
-            ),
-          if (user.isAdmin)
-            _Tile(
-              icon: Icons.shield_outlined,
-              label: 'Admin panel',
-              onTap: () => Navigator.pushNamed(context, AppRoutes.adminDashboard),
-            ),
-          _Tile(
             icon: Icons.edit_outlined,
             label: 'Edit profile',
             onTap: () => Navigator.pushNamed(context, AppRoutes.editProfile),
           ),
           _Tile(
-            icon: Icons.extension_outlined,
-            label: 'Integrations & setup',
-            onTap: () => Navigator.pushNamed(context, AppRoutes.integrations),
+            icon: Icons.place_outlined,
+            label: 'Spots I posted',
+            onTap: () => Navigator.pushNamed(context, AppRoutes.mySpots),
           ),
           _Tile(
-            icon: Icons.chat_bubble_outline_rounded,
-            label: 'Messages',
-            trailing: const Text('Soon'),
-            onTap: () => Navigator.pushNamed(context, AppRoutes.chat),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _Tile(
-            icon: Icons.logout_rounded,
-            label: 'Sign out',
-            danger: true,
-            onTap: () => _signOut(context),
+            icon: Icons.favorite_border_rounded,
+            label: 'Saved spots',
+            onTap: () => Navigator.pushNamed(context, AppRoutes.favorites),
           ),
         ],
       ),
@@ -154,25 +122,16 @@ class _Tile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final bool danger;
-  final Widget? trailing;
 
-  const _Tile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.danger = false,
-    this.trailing,
-  });
+  const _Tile({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppColors.danger : Theme.of(context).colorScheme.onSurface;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-      leading: Icon(icon, color: danger ? AppColors.danger : AppColors.teal),
-      title: Text(label, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: color)),
-      trailing: trailing ?? const Icon(Icons.chevron_right_rounded),
+      leading: Icon(icon, color: AppColors.teal),
+      title: Text(label, style: Theme.of(context).textTheme.titleSmall),
+      trailing: const Icon(Icons.chevron_right_rounded),
       onTap: onTap,
     );
   }

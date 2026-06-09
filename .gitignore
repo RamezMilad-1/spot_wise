@@ -50,3 +50,4 @@ app.*.map.json
 # Local environment file (API keys / URLs filled in later). The committed
 # template is .env.example.
 .env
+.claude/

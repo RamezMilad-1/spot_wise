@@ -13,6 +13,7 @@ class AppUser {
   final List<String> savedSpotIds;
   final String? homeCity;
   final String? fcmToken;
+  final bool suspended;
   final DateTime createdAt;
 
   const AppUser({
@@ -25,6 +26,7 @@ class AppUser {
     this.savedSpotIds = const [],
     this.homeCity,
     this.fcmToken,
+    this.suspended = false,
     required this.createdAt,
   });
 
@@ -49,6 +51,7 @@ class AppUser {
       savedSpotIds: JsonUtils.asStringList(json['savedSpots']),
       homeCity: JsonUtils.asStringOrNull(json['homeCity']),
       fcmToken: JsonUtils.asStringOrNull(json['fcmToken']),
+      suspended: JsonUtils.asBool(json['suspended']),
       createdAt: JsonUtils.asDate(json['createdAt']),
     );
   }
@@ -62,6 +65,7 @@ class AppUser {
         'savedSpots': savedSpotIds,
         'homeCity': homeCity,
         'fcmToken': fcmToken,
+        'suspended': suspended,
         'createdAt': createdAt.millisecondsSinceEpoch,
       };
 
@@ -73,6 +77,7 @@ class AppUser {
     List<String>? savedSpotIds,
     String? homeCity,
     String? fcmToken,
+    bool? suspended,
   }) {
     return AppUser(
       id: id,
@@ -84,6 +89,7 @@ class AppUser {
       savedSpotIds: savedSpotIds ?? this.savedSpotIds,
       homeCity: homeCity ?? this.homeCity,
       fcmToken: fcmToken ?? this.fcmToken,
+      suspended: suspended ?? this.suspended,
       createdAt: createdAt,
     );
   }

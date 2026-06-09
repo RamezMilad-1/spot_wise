@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
 
-/// The three user types from the pitch deck: traveller, contributor, admin.
+/// Two user types: every signed-in account is an `Explorer` (browse + post),
+/// plus `admin` for moderation. `contributor` is a legacy alias of `user`
+/// kept only so older stored records still parse — it behaves identically.
 enum UserRole {
   user,
   contributor,
@@ -16,19 +18,20 @@ enum UserRole {
       );
 
   String get label => switch (this) {
-        UserRole.user => 'Traveller',
-        UserRole.contributor => 'Contributor',
         UserRole.admin => 'Admin',
+        // `user` and the legacy `contributor` are both "Explorer".
+        _ => 'Explorer',
       };
 
   IconData get icon => switch (this) {
-        UserRole.user => Icons.explore_outlined,
-        UserRole.contributor => Icons.add_location_alt_outlined,
         UserRole.admin => Icons.verified_user_outlined,
+        _ => Icons.explore_outlined,
       };
 
   bool get canModerate => this == UserRole.admin;
-  bool get canContribute => this == UserRole.contributor || this == UserRole.admin;
+
+  /// Any signed-in user can contribute spots now (single unified role).
+  bool get canContribute => true;
 }
 
 /// Moderation lifecycle of a community-submitted spot.

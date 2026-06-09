@@ -2,16 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/routes/app_routes.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/utils/auth_gate.dart';
 import '../../models/notification_item.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/spots_provider.dart';
 import '../../providers/trips_provider.dart';
 import '../../services/notifications/notification_stream.dart';
 import '../../services/service_locator.dart';
+import '../../widgets/app_drawer.dart';
+import '../../widgets/app_menu_button.dart';
 import '../ai/ai_planner_screen.dart';
 import '../home/home_feed_screen.dart';
 import '../map/map_screen.dart';
-import '../profile/profile_screen.dart';
 import '../trips/trips_list_screen.dart';
 
 /// Lets any tab jump to another tab (e.g. "Explore the map" from home).
@@ -41,7 +45,6 @@ class _HomeShellState extends State<HomeShell> {
     MapScreen(),
     AiPlannerScreen(),
     TripsListScreen(),
-    ProfileScreen(),
   ];
 
   @override
@@ -52,6 +55,12 @@ class _HomeShellState extends State<HomeShell> {
       context.read<TripsProvider>().load();
       if (!kIsWeb) services.notifications.requestPermission();
     });
+  }
+
+  Future<void> _addSpot() async {
+    if (await ensureLoggedIn(context) && mounted) {
+      if (mounted) Navigator.pushNamed(context, AppRoutes.addSpot);
+    }
   }
 
   @override
@@ -66,39 +75,87 @@ class _HomeShellState extends State<HomeShell> {
         initialData: const [],
         child: Consumer<HomeTab>(
           builder: (context, tab, _) => Scaffold(
+            key: shellScaffoldKey,
+            drawer: const AppDrawer(),
             body: IndexedStack(index: tab.index, children: _screens),
-            bottomNavigationBar: NavigationBar(
-              selectedIndex: tab.index,
-              onDestinationSelected: tab.go,
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home_rounded),
-                  label: 'Home',
+            floatingActionButton: FloatingActionButton(
+              onPressed: _addSpot,
+              tooltip: 'Add a spot',
+              elevation: 6,
+              backgroundColor: AppColors.teal,
+              shape: const CircleBorder(),
+              child: Ink(
+                decoration: const BoxDecoration(
+                  gradient: AppColors.lagoonGradient,
+                  shape: BoxShape.circle,
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.map_outlined),
-                  selectedIcon: Icon(Icons.map_rounded),
-                  label: 'Map',
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.auto_awesome_outlined),
-                  selectedIcon: Icon(Icons.auto_awesome_rounded),
-                  label: 'Plan',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.luggage_outlined),
-                  selectedIcon: Icon(Icons.luggage_rounded),
-                  label: 'Trips',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person_outline_rounded),
-                  selectedIcon: Icon(Icons.person_rounded),
-                  label: 'Profile',
-                ),
-              ],
+              ),
+            ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+            bottomNavigationBar: BottomAppBar(
+              height: 64,
+              padding: EdgeInsets.zero,
+              shape: const CircularNotchedRectangle(),
+              notchMargin: 8,
+              child: Row(
+                children: [
+                  _NavItem(tab: tab, index: 0, icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
+                  _NavItem(tab: tab, index: 1, icon: Icons.map_outlined, selectedIcon: Icons.map_rounded, label: 'Map'),
+                  const SizedBox(width: 56),
+                  _NavItem(tab: tab, index: 2, icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome_rounded, label: 'Plan'),
+                  _NavItem(tab: tab, index: 3, icon: Icons.luggage_outlined, selectedIcon: Icons.luggage_rounded, label: 'Trips'),
+                ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final HomeTab tab;
+  final int index;
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+
+  const _NavItem({
+    required this.tab,
+    required this.index,
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = tab.index == index;
+    final color = selected ? AppColors.teal : Theme.of(context).colorScheme.onSurfaceVariant;
+    return Expanded(
+      child: InkWell(
+        onTap: () => tab.go(index),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(selected ? selectedIcon : icon, color: color, size: 24),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

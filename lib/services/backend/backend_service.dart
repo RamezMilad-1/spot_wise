@@ -44,5 +44,7 @@ abstract class BackendService {
 
   // ── Users ──────────────────────────────────────────────────────────────
   Future<AppUser?> getUser(String id);
+  Future<List<AppUser>> getUsers();
   Future<void> saveUser(AppUser user);
+  Future<void> deleteUser(String id);
 }

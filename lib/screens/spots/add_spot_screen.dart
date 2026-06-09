@@ -17,10 +17,12 @@ import '../../widgets/app_text_field.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/photo_picker.dart';
 
-/// Contributor flow: submit a new spot (camera/gallery photos + GPS capture).
-/// New spots start as `pending` and enter the admin moderation queue.
+/// Create a new spot, or — when [existing] is provided — edit one. New spots
+/// start as `pending` and enter the moderation queue; edits update in place.
+/// Admins editing a spot also get status / verified / featured controls.
 class AddSpotScreen extends StatefulWidget {
-  const AddSpotScreen({super.key});
+  final Spot? existing;
+  const AddSpotScreen({super.key, this.existing});
 
   @override
   State<AddSpotScreen> createState() => _AddSpotScreenState();
@@ -45,6 +47,38 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   bool _capturing = false;
   bool _submitting = false;
   List<String> _photos = [];
+
+  // Admin-only fields (used when editing).
+  bool _featured = false;
+  bool _verified = false;
+  SpotStatus _status = SpotStatus.pending;
+
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.existing;
+    if (s != null) {
+      _name.text = s.name;
+      _description.text = s.description;
+      _city.text = s.city;
+      _country.text = s.country;
+      _bestTime.text = s.bestTimeToVisit;
+      _tags.text = s.tags.join(', ');
+      _categoryId = s.categoryId;
+      _price = s.priceRange;
+      _isFree = s.isFree;
+      _family = s.familyFriendly;
+      _hiddenGem = s.hiddenGem;
+      _featured = s.featured;
+      _verified = s.verified;
+      _status = s.status;
+      _lat = s.lat;
+      _lng = s.lng;
+      _photos = [...s.photos];
+    }
+  }
 
   @override
   void dispose() {
@@ -80,42 +114,72 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     if (!_formKey.currentState!.validate()) return;
     final user = context.read<AuthProvider>().user;
     if (user == null) return;
+    final isAdmin = user.isAdmin;
 
     final tags = _tags.text
         .split(',')
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
-
-    final spot = Spot(
-      id: '',
-      name: _name.text.trim(),
-      description: _description.text.trim(),
-      country: _country.text.trim(),
-      city: _city.text.trim(),
-      categoryId: _categoryId,
-      lat: _lat ?? LocationService.fallbackCenter.latitude,
-      lng: _lng ?? LocationService.fallbackCenter.longitude,
-      photos: _photos,
-      priceRange: _isFree ? PriceRange.free : _price,
-      isFree: _isFree,
-      familyFriendly: _family,
-      hiddenGem: _hiddenGem,
-      bestTimeToVisit: _bestTime.text.trim(),
-      tags: tags,
-      status: SpotStatus.pending,
-      verified: false,
-      submittedBy: user.id,
-      submittedByName: user.name,
-      createdAt: DateTime.now(),
-    );
+    final price = _isFree ? PriceRange.free : _price;
 
     setState(() => _submitting = true);
     try {
-      await context.read<SpotsProvider>().submitSpot(spot);
-      if (!mounted) return;
-      AppSnackbar.success(context, 'Submitted! An admin will review it shortly.');
-      Navigator.pop(context);
+      final spotsP = context.read<SpotsProvider>();
+      if (_isEdit) {
+        final updated = widget.existing!.copyWith(
+          name: _name.text.trim(),
+          description: _description.text.trim(),
+          country: _country.text.trim(),
+          city: _city.text.trim(),
+          categoryId: _categoryId,
+          lat: _lat,
+          lng: _lng,
+          photos: _photos,
+          priceRange: price,
+          isFree: _isFree,
+          familyFriendly: _family,
+          hiddenGem: _hiddenGem,
+          bestTimeToVisit: _bestTime.text.trim(),
+          tags: tags,
+          // Admins can also move status / verified / featured.
+          status: isAdmin ? _status : null,
+          verified: isAdmin ? _verified : null,
+          featured: isAdmin ? _featured : null,
+        );
+        await services.backend.updateSpot(updated);
+        await spotsP.load(force: true);
+        if (!mounted) return;
+        AppSnackbar.success(context, 'Changes saved.');
+        Navigator.pop(context, true);
+      } else {
+        final spot = Spot(
+          id: '',
+          name: _name.text.trim(),
+          description: _description.text.trim(),
+          country: _country.text.trim(),
+          city: _city.text.trim(),
+          categoryId: _categoryId,
+          lat: _lat ?? LocationService.fallbackCenter.latitude,
+          lng: _lng ?? LocationService.fallbackCenter.longitude,
+          photos: _photos,
+          priceRange: price,
+          isFree: _isFree,
+          familyFriendly: _family,
+          hiddenGem: _hiddenGem,
+          bestTimeToVisit: _bestTime.text.trim(),
+          tags: tags,
+          status: SpotStatus.pending,
+          verified: false,
+          submittedBy: user.id,
+          submittedByName: user.name,
+          createdAt: DateTime.now(),
+        );
+        await spotsP.submitSpot(spot);
+        if (!mounted) return;
+        AppSnackbar.success(context, 'Submitted! An admin will review it shortly.');
+        Navigator.pop(context, true);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
@@ -128,32 +192,35 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     final categories = context.watch<CategoryStore>().enabled;
     if (_categoryId.isEmpty && categories.isNotEmpty) _categoryId = categories.first.id;
     final text = Theme.of(context).textTheme;
+    final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add a spot')),
+      appBar: AppBar(title: Text(_isEdit ? 'Edit spot' : 'Add a spot')),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.tealMist.withValues(alpha: 0.4),
-                borderRadius: AppRadius.brMd,
+            if (!_isEdit) ...[
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.tealMist.withValues(alpha: 0.4),
+                  borderRadius: AppRadius.brMd,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.verified_user_outlined, color: AppColors.tealDark, size: 20),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text('Every submission is reviewed by an admin before it goes public.',
+                          style: text.bodySmall?.copyWith(color: AppColors.tealDark)),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified_user_outlined, color: AppColors.tealDark, size: 20),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text('Every submission is reviewed by an admin before it goes public.',
-                        style: text.bodySmall?.copyWith(color: AppColors.tealDark)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             Text('Photos', style: text.labelLarge),
             const SizedBox(height: AppSpacing.sm),
             PhotoPickerRow(photos: _photos, onChanged: (p) => setState(() => _photos = p)),
@@ -257,10 +324,36 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               value: _hiddenGem,
               onChanged: (v) => setState(() => _hiddenGem = v),
             ),
+            if (_isEdit && isAdmin) ...[
+              const Divider(height: AppSpacing.xl),
+              Text('Admin', style: text.labelLarge?.copyWith(color: AppColors.teal)),
+              const SizedBox(height: AppSpacing.sm),
+              DropdownButtonFormField<SpotStatus>(
+                initialValue: _status,
+                decoration: const InputDecoration(labelText: 'Status'),
+                items: [
+                  for (final s in SpotStatus.values)
+                    DropdownMenuItem(value: s, child: Text(s.label)),
+                ],
+                onChanged: (v) => setState(() => _status = v ?? _status),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Verified'),
+                value: _verified,
+                onChanged: (v) => setState(() => _verified = v),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Featured on home'),
+                value: _featured,
+                onChanged: (v) => setState(() => _featured = v),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             AppButton(
-              'Submit for review',
-              icon: Icons.send_rounded,
+              _isEdit ? 'Save changes' : 'Submit for review',
+              icon: _isEdit ? Icons.save_rounded : Icons.send_rounded,
               loading: _submitting,
               onPressed: _submit,
             ),

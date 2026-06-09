@@ -64,6 +64,15 @@ class SpotsProvider extends ChangeNotifier {
   /// an admin approves it.
   Future<void> submitSpot(Spot spot) => services.backend.createSpot(spot);
 
+  /// All spots a user has submitted, across every status (for "Spots I posted").
+  Future<List<Spot>> mySpots(String userId) async {
+    final all = await services.backend.getSpots();
+    return all.where((s) => s.submittedBy == userId).toList();
+  }
+
+  /// Approved + admin-featured spots for the home "Featured" rail.
+  List<Spot> get featured => _spots.where((s) => s.featured).toList();
+
   /// Cities present in the data, for the discovery/search chips.
   List<String> get cities {
     final set = <String>{};

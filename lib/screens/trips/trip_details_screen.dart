@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/debouncer.dart';
@@ -20,6 +22,7 @@ import '../../widgets/feedback.dart';
 import '../../widgets/network_photo.dart';
 import '../../widgets/spot_list_tile.dart';
 import '../../widgets/spot_marker.dart';
+import '../../widgets/trip_budget_card.dart';
 
 class TripDetailsScreen extends StatefulWidget {
   final Trip trip;
@@ -69,6 +72,31 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           createdAt: DateTime.now(),
         ));
     if (mounted) AppSnackbar.success(context, 'Reminder added to your notifications.');
+  }
+
+  void _openStop(TripStop stop) {
+    final spot = context.read<SpotsProvider>().byId(stop.spotId);
+    if (spot != null) {
+      Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot);
+    } else {
+      _openInMaps(stop.lat, stop.lng);
+    }
+  }
+
+  Future<void> _openInMaps(double lat, double lng) async {
+    final uri = Uri.parse('${AppConfig.googleMapsSearch}$lat,$lng');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openDayRoute(TripDay day) async {
+    if (day.stops.isEmpty) return;
+    final path = day.stops.map((s) => '${s.lat},${s.lng}').join('/');
+    final uri = Uri.parse('https://www.google.com/maps/dir/$path');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Future<void> _addStop(Trip trip, int dayNumber) async {
@@ -175,6 +203,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
               ),
             ),
             Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+              child: TripBudgetCard(trip: trip),
+            ),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: TextField(
                 controller: _notes,
@@ -194,6 +226,8 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 trip: trip,
                 day: day,
                 onAddStop: () => _addStop(trip, day.dayNumber),
+                onOpenStop: _openStop,
+                onOpenRoute: () => _openDayRoute(day),
               ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -255,15 +289,24 @@ class _StopsMap extends StatelessWidget {
 
 class _DaySection extends StatelessWidget {
   final Trip trip;
-  final dynamic day; // TripDay
+  final TripDay day;
   final VoidCallback onAddStop;
+  final VoidCallback onOpenRoute;
+  final void Function(TripStop) onOpenStop;
 
-  const _DaySection({required this.trip, required this.day, required this.onAddStop});
+  const _DaySection({
+    required this.trip,
+    required this.day,
+    required this.onAddStop,
+    required this.onOpenRoute,
+    required this.onOpenStop,
+  });
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final tripsP = context.read<TripsProvider>();
+    final dayCost = day.stops.fold<double>(0, (s, st) => s + st.estimatedCost);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
@@ -285,10 +328,19 @@ class _DaySection extends StatelessWidget {
                   children: [
                     Text(day.title.isEmpty ? 'Day ${day.dayNumber}' : day.title, style: text.titleMedium),
                     if (day.date != null)
-                      Text(Formatters.weekday(day.date), style: text.bodySmall),
+                      Text(
+                        '${Formatters.weekday(day.date!)}${dayCost > 0 ? ' · ${Formatters.money(dayCost)}' : ''}',
+                        style: text.bodySmall,
+                      ),
                   ],
                 ),
               ),
+              if (day.stops.isNotEmpty)
+                IconButton(
+                  tooltip: 'Open day in Google Maps',
+                  icon: const Icon(Icons.directions_rounded, size: 20),
+                  onPressed: onOpenRoute,
+                ),
               TextButton.icon(
                 onPressed: onAddStop,
                 icon: const Icon(Icons.add_rounded, size: 18),
@@ -313,6 +365,7 @@ class _DaySection extends StatelessWidget {
                     key: ValueKey('${day.dayNumber}-${day.stops[i].spotId}-$i'),
                     stop: day.stops[i],
                     onRemove: () => tripsP.removeStop(trip, day.dayNumber, i),
+                    onTap: () => onOpenStop(day.stops[i]),
                   ),
               ],
             ),
@@ -323,50 +376,65 @@ class _DaySection extends StatelessWidget {
 }
 
 class _StopTile extends StatelessWidget {
-  final dynamic stop; // TripStop
+  final TripStop stop;
   final VoidCallback onRemove;
-  const _StopTile({super.key, required this.stop, required this.onRemove});
+  final VoidCallback onTap;
+  const _StopTile({super.key, required this.stop, required this.onRemove, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final sub = [
+      stop.dayPart.label,
+      if (stop.suggestedTime.isNotEmpty) stop.suggestedTime,
+      stop.estimatedCost > 0 ? Formatters.money(stop.estimatedCost) : 'Free',
+      if (stop.durationMinutes > 0) Formatters.duration(stop.durationMinutes),
+    ].join(' · ');
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: AppRadius.brMd,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: AppRadius.brMd,
-          border: Border.all(color: Theme.of(context).colorScheme.outline),
-        ),
-        child: Row(
-          children: [
-            NetworkPhoto(stop.photo, width: 48, height: 48, radius: AppRadius.brSm),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(stop.name, style: text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Row(
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              borderRadius: AppRadius.brMd,
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
+            ),
+            child: Row(
+              children: [
+                NetworkPhoto(stop.photo, width: 48, height: 48, radius: AppRadius.brSm),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(stop.dayPart.icon, size: 13, color: AppColors.teal),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${stop.dayPart.label}${stop.suggestedTime.isNotEmpty ? ' · ${stop.suggestedTime}' : ''}',
-                        style: text.bodySmall,
+                      Text(stop.name, style: text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(stop.dayPart.icon, size: 13, color: AppColors.teal),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(sub,
+                                style: text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: onRemove,
+                ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.close_rounded, size: 18),
-              onPressed: onRemove,
-            ),
-          ],
+          ),
         ),
       ),
     );

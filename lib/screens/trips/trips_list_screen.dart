@@ -4,9 +4,12 @@ import 'package:provider/provider.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/auth_gate.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/trip.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/trips_provider.dart';
+import '../../widgets/app_menu_button.dart';
 import '../../widgets/network_photo.dart';
 import '../../widgets/state_views.dart';
 import '../shell/home_shell.dart';
@@ -14,20 +17,38 @@ import '../shell/home_shell.dart';
 class TripsListScreen extends StatelessWidget {
   const TripsListScreen({super.key});
 
+  Future<void> _newTrip(BuildContext context) async {
+    if (await ensureLoggedIn(context) && context.mounted) {
+      if (context.mounted) Navigator.pushNamed(context, AppRoutes.createTrip);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     final tripsP = context.watch<TripsProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My trips')),
+      appBar: AppBar(leading: const AppMenuButton(), title: const Text('My trips')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, AppRoutes.createTrip),
+        onPressed: () => _newTrip(context),
         icon: const Icon(Icons.add_rounded),
         label: const Text('New trip'),
       ),
-      body: _body(context, tripsP),
+      body: !auth.isLoggedIn ? _guestState(context) : _body(context, tripsP),
     );
   }
+
+  Widget _guestState(BuildContext context) => EmptyView(
+        icon: Icons.luggage_outlined,
+        title: 'Plan your first trip',
+        message: 'Sign in to build day-by-day itineraries and keep them in one place.',
+        action: FilledButton.icon(
+          onPressed: () => Navigator.pushNamed(context, AppRoutes.login),
+          icon: const Icon(Icons.login_rounded),
+          label: const Text('Sign in'),
+        ),
+      );
 
   Widget _body(BuildContext context, TripsProvider tripsP) {
     if (tripsP.loading && tripsP.isEmpty) return const LoadingView();

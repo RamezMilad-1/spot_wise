@@ -10,6 +10,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../models/spot.dart';
 import '../../providers/map_provider.dart';
 import '../../providers/spots_provider.dart';
+import '../../widgets/app_menu_button.dart';
 import '../../widgets/spot_list_tile.dart';
 import '../../widgets/spot_marker.dart';
 import 'filter_sheet.dart';
@@ -155,7 +156,11 @@ class _MapScreenState extends State<MapScreen> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => FilterSheet(initial: mapP.filter, hasLocation: mapP.userLocation != null),
+      builder: (_) => FilterSheet(
+        initial: mapP.filter,
+        hasLocation: mapP.userLocation != null,
+        onApply: mapP.setFilter,
+      ),
     );
   }
 }
@@ -172,6 +177,21 @@ class _TopBar extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
+        Material(
+          color: scheme.surface,
+          borderRadius: AppRadius.brMd,
+          elevation: 2,
+          shadowColor: Colors.black26,
+          child: InkWell(
+            onTap: () => shellScaffoldKey.currentState?.openDrawer(),
+            borderRadius: AppRadius.brMd,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Icon(Icons.menu_rounded, color: scheme.onSurface),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Material(
             color: scheme.surface,

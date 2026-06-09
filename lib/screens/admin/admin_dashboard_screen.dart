@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/constants/categories.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -20,7 +21,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<AdminProvider>().load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AdminProvider>()
+        ..load()
+        ..loadAllSpots()
+        ..loadUsers();
+    });
   }
 
   @override
@@ -31,7 +37,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Admin')),
       body: RefreshIndicator(
-        onRefresh: () => adminP.load(),
+        onRefresh: () async {
+          await adminP.load();
+          await adminP.loadAllSpots();
+        },
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
@@ -73,11 +82,48 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               onTap: () => Navigator.pushNamed(context, AppRoutes.adminReports),
             ),
             _ActionTile(
+              icon: Icons.travel_explore_outlined,
+              title: 'Manage all spots',
+              subtitle: 'Search, edit, delete, verify & feature',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.adminSpots),
+            ),
+            _ActionTile(
+              icon: Icons.group_outlined,
+              title: 'Manage users',
+              subtitle: '${adminP.userCount} users · ${adminP.adminCount} admins'
+                  '${adminP.suspendedCount > 0 ? ' · ${adminP.suspendedCount} suspended' : ''}',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.adminUsers),
+            ),
+            _ActionTile(
               icon: Icons.category_outlined,
               title: 'Categories',
               subtitle: 'Enable or disable spot categories',
               onTap: () => Navigator.pushNamed(context, AppRoutes.adminCategories),
             ),
+            const SectionHeader(title: 'Analytics'),
+            Row(
+              children: [
+                _MiniStat(label: 'Approved', value: '${adminP.approvedCount}', color: AppColors.success),
+                _MiniStat(label: 'Rejected', value: '${adminP.rejectedCount}', color: AppColors.danger),
+                _MiniStat(label: 'Featured', value: '${adminP.featuredCount}', color: AppColors.amber),
+              ],
+            ),
+            if (adminP.categoryBreakdown.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text('Top categories', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  for (final e in adminP.categoryBreakdown.take(6))
+                    Chip(
+                      avatar: Icon(Categories.iconFor(e.key), size: 16, color: Categories.colorFor(e.key)),
+                      label: Text('${Categories.labelFor(e.key)} · ${e.value}'),
+                    ),
+                ],
+              ),
+            ],
             if (adminP.pending.isNotEmpty) ...[
               const SectionHeader(title: 'Latest submissions'),
               for (final spot in adminP.pending.take(4))
@@ -136,6 +182,37 @@ class _StatCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _MiniStat({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: AppRadius.brMd,
+        ),
+        child: Column(
+          children: [
+            Text(value,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(color: color, fontWeight: FontWeight.w800)),
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ],
         ),
       ),
     );

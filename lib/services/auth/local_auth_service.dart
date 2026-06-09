@@ -64,6 +64,9 @@ class LocalAuthService implements AuthService {
     if (user == null) {
       throw const AuthException('That account could not be loaded.');
     }
+    if (user.suspended) {
+      throw const AuthException('This account has been suspended. Contact an admin.');
+    }
     await _persistSession(user.id);
     _current = user;
     return user;

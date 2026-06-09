@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/auth_gate.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/enums.dart';
 import '../../providers/ai_planner_provider.dart';
 import '../../providers/spots_provider.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_menu_button.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/feedback.dart';
 
@@ -23,16 +25,20 @@ class AiPlannerScreen extends StatefulWidget {
 
 class _AiPlannerScreenState extends State<AiPlannerScreen> {
   final _destination = TextEditingController();
+  final _budget = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _destination.text = context.read<AiPlannerProvider>().destination;
+    final aiP = context.read<AiPlannerProvider>();
+    _destination.text = aiP.destination;
+    if (aiP.budgetCap != null) _budget.text = aiP.budgetCap!.round().toString();
   }
 
   @override
   void dispose() {
     _destination.dispose();
+    _budget.dispose();
     super.dispose();
   }
 
@@ -47,6 +53,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
   }
 
   Future<void> _generate() async {
+    if (!await ensureLoggedIn(context) || !mounted) return;
     final aiP = context.read<AiPlannerProvider>();
     final spotsP = context.read<SpotsProvider>();
     final ok = await aiP.generate(spotsP.spots);
@@ -66,6 +73,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppMenuButton(),
         title: const Text('Plan with AI'),
         actions: [
           Padding(
@@ -191,6 +199,18 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                 ),
             ],
           ),
+          const SizedBox(height: AppSpacing.lg),
+          AppTextField(
+            controller: _budget,
+            label: 'Max budget — optional (USD)',
+            hint: 'e.g. 300',
+            prefixIcon: Icons.account_balance_wallet_outlined,
+            keyboardType: TextInputType.number,
+            onChanged: (v) => aiP.setBudgetCap(double.tryParse(v.trim())),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text('SpotWise estimates the trip cost from spot prices, meals & transport.',
+              style: text.bodySmall),
           const SizedBox(height: AppSpacing.lg),
           Text('Pace', style: text.labelLarge),
           const SizedBox(height: AppSpacing.sm),
