@@ -198,19 +198,31 @@ class _DockAddButton extends StatelessWidget {
       child: Center(
         child: Tooltip(
           message: 'Add a spot',
-          child: Material(
-            color: isDark ? AppColors.darkInk : AppColors.ink,
-            shape: const CircleBorder(),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onTap,
-              child: SizedBox(
-                width: 52,
-                height: 52,
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 26,
-                  color: isDark ? AppColors.darkBg : Colors.white,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.20),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: isDark ? AppColors.darkInk : AppColors.ink,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                child: SizedBox(
+                  width: 52,
+                  height: 52,
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: 26,
+                    color: isDark ? AppColors.darkBg : Colors.white,
+                  ),
                 ),
               ),
             ),

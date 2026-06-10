@@ -474,21 +474,27 @@ class _FilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-      color: isDark ? AppColors.darkInk : AppColors.ink,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Badge(
-            isLabelVisible: count > 0,
-            label: Text('$count'),
-            child: Icon(
-              Icons.tune_rounded,
-              color: isDark ? AppColors.darkBg : Colors.white,
-              size: 22,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: AppColors.softShadow,
+      ),
+      child: Material(
+        color: isDark ? AppColors.darkInk : AppColors.ink,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Badge(
+              isLabelVisible: count > 0,
+              label: Text('$count'),
+              child: Icon(
+                Icons.tune_rounded,
+                color: isDark ? AppColors.darkBg : Colors.white,
+                size: 22,
+              ),
             ),
           ),
         ),

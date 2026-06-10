@@ -88,8 +88,9 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: surface,
-        elevation: isDark ? 0 : 3,
-        shadowColor: Colors.black.withValues(alpha: 0.10),
+        // A touch higher + lower alpha = softer, more diffuse lift.
+        elevation: isDark ? 0 : 5,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
@@ -127,7 +128,9 @@ class AppTheme {
           minimumSize: const Size.fromHeight(54),
           textStyle: textTheme.labelLarge?.copyWith(fontSize: 15),
           shape: const StadiumBorder(),
-          elevation: 0,
+          // Subtle lift under the primary ink pill.
+          elevation: 3,
+          shadowColor: Colors.black.withValues(alpha: 0.28),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -137,7 +140,9 @@ class AppTheme {
           minimumSize: const Size.fromHeight(54),
           textStyle: textTheme.labelLarge?.copyWith(fontSize: 15),
           shape: const StadiumBorder(),
-          elevation: 0,
+          // Warm glow under the coral CTA.
+          elevation: 3,
+          shadowColor: AppColors.coral.withValues(alpha: 0.45),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -166,7 +171,8 @@ class AppTheme {
         // WidgetStateColor so FilterChip labels flip with the ink fill.
         labelStyle: textTheme.labelMedium?.copyWith(
           color: WidgetStateColor.resolveWith(
-            (states) => states.contains(WidgetState.selected) ? onPrimaryBtn : ink,
+            (states) =>
+                states.contains(WidgetState.selected) ? onPrimaryBtn : ink,
           ),
         ),
         secondaryLabelStyle: textTheme.labelMedium?.copyWith(
