@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/trips_provider.dart';
@@ -39,7 +38,11 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              UserAvatar(photoUrl: user.photoUrl, initials: user.initials, radius: 36),
+              UserAvatar(
+                photoUrl: user.photoUrl,
+                initials: user.initials,
+                radius: 48,
+              ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
@@ -48,7 +51,14 @@ class ProfileScreen extends StatelessWidget {
                     Text(user.name, style: text.headlineSmall),
                     Text(user.email, style: text.bodySmall),
                     const SizedBox(height: AppSpacing.sm),
-                    Pill(label: user.role.label, icon: user.role.icon, color: AppColors.teal),
+                    Pill(
+                      label: user.role.label,
+                      icon: user.role.icon,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      background: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                    ),
                   ],
                 ),
               ),
@@ -105,7 +115,7 @@ class _Stat extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: AppRadius.brMd,
+          borderRadius: AppRadius.brLg,
         ),
         child: Column(
           children: [
@@ -127,9 +137,18 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-      leading: Icon(icon, color: AppColors.teal),
+      leading: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 20, color: scheme.onSurfaceVariant),
+      ),
       title: Text(label, style: Theme.of(context).textTheme.titleSmall),
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: onTap,

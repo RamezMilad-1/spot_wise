@@ -33,6 +33,10 @@ class LocationService {
     }
   }
 
-  double distanceMeters(LatLng a, LatLng b) =>
-      Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
+  double distanceMeters(LatLng a, LatLng b) => Geolocator.distanceBetween(
+    a.latitude,
+    a.longitude,
+    b.latitude,
+    b.longitude,
+  );
 }

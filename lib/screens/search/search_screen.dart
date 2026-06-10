@@ -58,11 +58,13 @@ class _SearchScreenState extends State<SearchScreen> {
     final localMatches = q.isEmpty
         ? <Spot>[]
         : spotsP.spots
-            .where((s) => '${s.name} ${s.city} ${s.country} ${s.tags.join(' ')}'
-                .toLowerCase()
-                .contains(q))
-            .take(25)
-            .toList();
+              .where(
+                (s) => '${s.name} ${s.city} ${s.country} ${s.tags.join(' ')}'
+                    .toLowerCase()
+                    .contains(q),
+              )
+              .take(25)
+              .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -78,7 +80,9 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
       ),
-      body: q.isEmpty ? _suggestions(context, spotsP) : _results(context, mapP, localMatches),
+      body: q.isEmpty
+          ? _suggestions(context, spotsP)
+          : _results(context, mapP, localMatches),
     );
   }
 
@@ -87,7 +91,10 @@ class _SearchScreenState extends State<SearchScreen> {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        Text('Popular destinations', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Popular destinations',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: AppSpacing.md),
         Wrap(
           spacing: AppSpacing.sm,
@@ -119,7 +126,15 @@ class _SearchScreenState extends State<SearchScreen> {
           const SectionHeader(title: 'Places'),
           for (final place in mapP.searchResults)
             ListTile(
-              leading: const Icon(Icons.public_rounded),
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.public_rounded, size: 20),
+              ),
               title: Text(place.name),
               subtitle: Text(
                 place.country.isEmpty ? place.displayName : place.country,
@@ -137,17 +152,25 @@ class _SearchScreenState extends State<SearchScreen> {
         if (spots.isEmpty)
           Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Text('No saved spots match “$_query”.',
-                style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              'No saved spots match “$_query”.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           )
         else
-          ...spots.map((s) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: SpotListTile(
-                  spot: s,
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: s),
+          ...spots.map(
+            (s) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: SpotListTile(
+                spot: s,
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.spotDetails,
+                  arguments: s,
                 ),
-              )),
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -37,7 +37,8 @@ class AppUser {
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty || parts.first.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
   }
 
   factory AppUser.fromJson(String id, Map<dynamic, dynamic> json) {
@@ -57,17 +58,17 @@ class AppUser {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'email': email,
-        'role': role.value,
-        'photoUrl': photoUrl,
-        'interests': interests,
-        'savedSpots': savedSpotIds,
-        'homeCity': homeCity,
-        'fcmToken': fcmToken,
-        'suspended': suspended,
-        'createdAt': createdAt.millisecondsSinceEpoch,
-      };
+    'name': name,
+    'email': email,
+    'role': role.value,
+    'photoUrl': photoUrl,
+    'interests': interests,
+    'savedSpots': savedSpotIds,
+    'homeCity': homeCity,
+    'fcmToken': fcmToken,
+    'suspended': suspended,
+    'createdAt': createdAt.millisecondsSinceEpoch,
+  };
 
   AppUser copyWith({
     String? name,

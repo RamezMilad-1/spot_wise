@@ -24,7 +24,9 @@ Future<void> main() async {
   // .env is optional — the app runs fully on local data without it.
   try {
     await dotenv.load(fileName: '.env');
-  } catch (_) {/* no .env present — that's fine */}
+  } catch (_) {
+    /* no .env present — that's fine */
+  }
 
   await Hive.initFlutter();
   await ServiceLocator.instance.init();

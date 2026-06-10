@@ -34,7 +34,11 @@ class AppLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(Icons.travel_explore_rounded, color: Colors.white, size: size * 0.6),
+      child: Icon(
+        Icons.travel_explore_rounded,
+        color: Colors.white,
+        size: size * 0.6,
+      ),
     );
 
     if (!showWordmark) return mark;
@@ -52,12 +56,20 @@ class AppLogo extends StatelessWidget {
     if (stacked) {
       return Column(
         mainAxisSize: MainAxisSize.min,
-        children: [mark, SizedBox(height: size * 0.3), wordmark],
+        children: [
+          mark,
+          SizedBox(height: size * 0.3),
+          wordmark,
+        ],
       );
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [mark, SizedBox(width: size * 0.34), wordmark],
+      children: [
+        mark,
+        SizedBox(width: size * 0.34),
+        wordmark,
+      ],
     );
   }
 }

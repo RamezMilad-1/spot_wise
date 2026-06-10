@@ -7,6 +7,7 @@ import '../service_locator.dart';
 /// streaming without touching the UI.
 Stream<List<NotificationItem>> watchNotifications(String userId) async* {
   yield await services.backend.getNotifications(userId);
-  yield* Stream.periodic(const Duration(seconds: 3))
-      .asyncMap((_) => services.backend.getNotifications(userId));
+  yield* Stream.periodic(
+    const Duration(seconds: 3),
+  ).asyncMap((_) => services.backend.getNotifications(userId));
 }

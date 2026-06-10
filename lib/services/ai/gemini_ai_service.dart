@@ -29,8 +29,8 @@ class GeminiAiService implements AiService {
   final LocalItineraryGenerator _fallback;
 
   GeminiAiService({http.Client? client, LocalItineraryGenerator? fallback})
-      : _client = client ?? http.Client(),
-        _fallback = fallback ?? LocalItineraryGenerator();
+    : _client = client ?? http.Client(),
+      _fallback = fallback ?? LocalItineraryGenerator();
 
   @override
   bool get isLive => AppConfig.hasGemini;
@@ -41,12 +41,16 @@ class GeminiAiService implements AiService {
     required List<Spot> spots,
     required String userId,
   }) async {
-    final approved = spots.where((s) => s.status == SpotStatus.approved).toList();
+    final approved = spots
+        .where((s) => s.status == SpotStatus.approved)
+        .toList();
     if (!AppConfig.hasGemini) {
       return _fallback.generate(request, approved, userId);
     }
     try {
-      final uri = Uri.parse('$_endpoint/$_model:generateContent?key=${AppConfig.geminiApiKey}');
+      final uri = Uri.parse(
+        '$_endpoint/$_model:generateContent?key=${AppConfig.geminiApiKey}',
+      );
       final res = await _client.post(
         uri,
         headers: {'Content-Type': 'application/json'},
@@ -54,9 +58,9 @@ class GeminiAiService implements AiService {
           'contents': [
             {
               'parts': [
-                {'text': _buildPrompt(request, approved)}
-              ]
-            }
+                {'text': _buildPrompt(request, approved)},
+              ],
+            },
           ],
           'generationConfig': {
             'temperature': 0.9,
@@ -67,7 +71,8 @@ class GeminiAiService implements AiService {
       if (res.statusCode != 200) throw Exception('Gemini ${res.statusCode}');
 
       final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final text = data['candidates'][0]['content']['parts'][0]['text'] as String;
+      final text =
+          data['candidates'][0]['content']['parts'][0]['text'] as String;
       final parsed = jsonDecode(text) as Map<String, dynamic>;
       final trip = _toTrip(parsed, request, approved, userId);
       return trip ?? _fallback.generate(request, approved, userId);
@@ -80,12 +85,19 @@ class GeminiAiService implements AiService {
   List<Spot> _candidatePool(AiPlanRequest req, List<Spot> spots) {
     bool near(Spot s) {
       if (req.lat == null || req.lng == null) return false;
-      return const Distance().as(LengthUnit.Kilometer, LatLng(req.lat!, req.lng!), s.latLng) <= 60;
+      return const Distance().as(
+            LengthUnit.Kilometer,
+            LatLng(req.lat!, req.lng!),
+            s.latLng,
+          ) <=
+          60;
     }
 
     final d = req.destination.trim().toLowerCase();
     final relevant = spots
-        .where((s) => (d.isNotEmpty && s.city.toLowerCase().contains(d)) || near(s))
+        .where(
+          (s) => (d.isNotEmpty && s.city.toLowerCase().contains(d)) || near(s),
+        )
         .toList();
     final pool = relevant.isNotEmpty ? relevant : spots;
     return pool.take(40).toList();
@@ -94,13 +106,15 @@ class GeminiAiService implements AiService {
   String _buildPrompt(AiPlanRequest req, List<Spot> spots) {
     final pool = _candidatePool(req, spots);
     final spotLines = pool
-        .map((s) =>
-            '- id:${s.id} | ${s.name} | ${Categories.labelFor(s.categoryId)} | ${s.city} '
-            '| price:${s.priceRange.symbol} (~\$${TripEstimator.stopCost(s).round()}) '
-            '| ~${TripEstimator.durationMinutes(s.categoryId)}min '
-            '| rating:${s.rating} '
-            '| loc:${s.lat.toStringAsFixed(4)},${s.lng.toStringAsFixed(4)} '
-            '| tags:${s.tags.join(', ')}')
+        .map(
+          (s) =>
+              '- id:${s.id} | ${s.name} | ${Categories.labelFor(s.categoryId)} | ${s.city} '
+              '| price:${s.priceRange.symbol} (~\$${TripEstimator.stopCost(s).round()}) '
+              '| ~${TripEstimator.durationMinutes(s.categoryId)}min '
+              '| rating:${s.rating} '
+              '| loc:${s.lat.toStringAsFixed(4)},${s.lng.toStringAsFixed(4)} '
+              '| tags:${s.tags.join(', ')}',
+        )
         .join('\n');
 
     final budgetLine = req.budgetCap != null
@@ -121,7 +135,12 @@ Order each day's stops from morning to evening and keep roughly ${req.pace.stops
 ''';
   }
 
-  Trip? _toTrip(Map<String, dynamic> json, AiPlanRequest req, List<Spot> spots, String userId) {
+  Trip? _toTrip(
+    Map<String, dynamic> json,
+    AiPlanRequest req,
+    List<Spot> spots,
+    String userId,
+  ) {
     final byId = {for (final s in spots) s.id: s};
     final byName = {for (final s in spots) s.name.toLowerCase(): s};
     final daysJson = (json['days'] as List?) ?? const [];
@@ -133,31 +152,36 @@ Order each day's stops from morning to evening and keep roughly ${req.pace.stops
       final stops = <TripStop>[];
       for (final raw in stopsJson) {
         final m = Map<String, dynamic>.from(raw as Map);
-        final spot = byId[JsonUtils.asString(m['spotId'])] ??
+        final spot =
+            byId[JsonUtils.asString(m['spotId'])] ??
             byName[JsonUtils.asString(m['name']).toLowerCase()];
         if (spot == null) continue;
         // Times + day-parts are computed by the estimator, not trusted from the
         // model, so the schedule is always realistic.
-        stops.add(TripStop(
-          spotId: spot.id,
-          name: spot.name,
-          photo: spot.coverPhoto,
-          categoryId: spot.categoryId,
-          lat: spot.lat,
-          lng: spot.lng,
-          note: JsonUtils.asString(m['note']),
-          estimatedCost: TripEstimator.stopCost(spot),
-          durationMinutes: TripEstimator.durationMinutes(spot.categoryId),
-        ));
+        stops.add(
+          TripStop(
+            spotId: spot.id,
+            name: spot.name,
+            photo: spot.coverPhoto,
+            categoryId: spot.categoryId,
+            lat: spot.lat,
+            lng: spot.lng,
+            note: JsonUtils.asString(m['note']),
+            estimatedCost: TripEstimator.stopCost(spot),
+            durationMinutes: TripEstimator.durationMinutes(spot.categoryId),
+          ),
+        );
       }
       if (stops.isEmpty) continue;
-      rawDays.add(TripDay(
-        dayNumber: rawDays.length + 1,
-        date: req.startDate.add(Duration(days: rawDays.length)),
-        title: JsonUtils.asString(dj['title'], 'Day ${rawDays.length + 1}'),
-        summary: JsonUtils.asString(dj['summary']),
-        stops: stops,
-      ));
+      rawDays.add(
+        TripDay(
+          dayNumber: rawDays.length + 1,
+          date: req.startDate.add(Duration(days: rawDays.length)),
+          title: JsonUtils.asString(dj['title'], 'Day ${rawDays.length + 1}'),
+          summary: JsonUtils.asString(dj['summary']),
+          stops: stops,
+        ),
+      );
     }
 
     if (rawDays.isEmpty) return null;
@@ -171,13 +195,16 @@ Order each day's stops from morning to evening and keep roughly ${req.pace.stops
       lat: req.lat,
       lng: req.lng,
       startDate: req.startDate,
-      endDate: req.startDate.add(Duration(days: (days.length - 1).clamp(0, 365))),
+      endDate: req.startDate.add(
+        Duration(days: (days.length - 1).clamp(0, 365)),
+      ),
       days: days,
       aiGenerated: true,
       coverPhoto: days.first.stops.first.photo,
       estimatedCost: cost,
       budgetCap: req.budgetCap,
-      notes: 'Generated by Gemini for ${req.interests.isEmpty ? 'your trip' : req.interests.join(', ')}.',
+      notes:
+          'Generated by Gemini for ${req.interests.isEmpty ? 'your trip' : req.interests.join(', ')}.',
       createdAt: DateTime.now(),
     );
   }

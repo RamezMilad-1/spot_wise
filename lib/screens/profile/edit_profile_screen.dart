@@ -51,11 +51,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _save() async {
     setState(() => _saving = true);
     final ok = await context.read<AuthProvider>().updateProfile(
-          name: _name.text.trim(),
-          homeCity: _homeCity.text.trim(),
-          interests: _interests.toList(),
-          photoUrl: _photo,
-        );
+      name: _name.text.trim(),
+      homeCity: _homeCity.text.trim(),
+      interests: _interests.toList(),
+      photoUrl: _photo,
+    );
     if (!mounted) return;
     setState(() => _saving = false);
     if (ok) {
@@ -79,7 +79,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Center(
             child: Stack(
               children: [
-                UserAvatar(photoUrl: _photo, initials: user?.initials ?? '?', radius: 48),
+                UserAvatar(
+                  photoUrl: _photo,
+                  initials: user?.initials ?? '?',
+                  radius: 48,
+                ),
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -87,8 +91,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     onTap: _pickPhoto,
                     child: CircleAvatar(
                       radius: 16,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                      backgroundColor: Theme.of(context).colorScheme.onSurface,
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.surface,
+                      ),
                     ),
                   ),
                 ),
@@ -96,13 +104,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          AppTextField(controller: _name, label: 'Name', prefixIcon: Icons.person_outline_rounded),
+          AppTextField(
+            controller: _name,
+            label: 'Name',
+            prefixIcon: Icons.person_outline_rounded,
+          ),
           const SizedBox(height: AppSpacing.lg),
-          AppTextField(controller: _homeCity, label: 'Home city', prefixIcon: Icons.home_outlined),
+          AppTextField(
+            controller: _homeCity,
+            label: 'Home city',
+            prefixIcon: Icons.home_outlined,
+          ),
           const SizedBox(height: AppSpacing.lg),
           Text('Interests', style: text.labelLarge),
           const SizedBox(height: AppSpacing.sm),
-          Text('We use these to recommend spots and tailor AI trips.', style: text.bodySmall),
+          Text(
+            'We use these to recommend spots and tailor AI trips.',
+            style: text.bodySmall,
+          ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
@@ -113,13 +132,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   label: Text(i),
                   selected: _interests.contains(i),
                   onSelected: (_) => setState(() {
-                    _interests.contains(i) ? _interests.remove(i) : _interests.add(i);
+                    _interests.contains(i)
+                        ? _interests.remove(i)
+                        : _interests.add(i);
                   }),
                 ),
             ],
           ),
           const SizedBox(height: AppSpacing.xxl),
-          AppButton('Save changes', icon: Icons.check_rounded, loading: _saving, onPressed: _save),
+          AppButton(
+            'Save changes',
+            icon: Icons.check_rounded,
+            loading: _saving,
+            onPressed: _save,
+          ),
         ],
       ),
     );

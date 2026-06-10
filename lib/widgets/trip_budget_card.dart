@@ -18,12 +18,20 @@ class TripBudgetCard extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     const sym = TripEstimator.symbol;
     final stops = TripEstimator.stopsCost(trip.days);
-    final total = trip.estimatedCost > 0 ? trip.estimatedCost : TripEstimator.total(trip.days);
+    final total = trip.estimatedCost > 0
+        ? trip.estimatedCost
+        : TripEstimator.total(trip.days);
     final extras = (total - stops).clamp(0, double.infinity).toDouble();
     final cap = trip.budgetCap;
     final over = cap != null && total > cap;
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        borderRadius: AppRadius.brLg,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -31,12 +39,17 @@ class TripBudgetCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.account_balance_wallet_rounded, color: AppColors.teal),
+                Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Text('Estimated budget', style: text.titleMedium),
                 const Spacer(),
-                Text(Formatters.money(total, symbol: sym),
-                    style: text.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                Text(
+                  Formatters.money(total, symbol: sym),
+                  style: text.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
@@ -48,7 +61,10 @@ class TripBudgetCard extends StatelessWidget {
                 children: [
                   Text('Your budget', style: text.bodyMedium),
                   const Spacer(),
-                  Text(Formatters.money(cap, symbol: sym), style: text.bodyMedium),
+                  Text(
+                    Formatters.money(cap, symbol: sym),
+                    style: text.bodyMedium,
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -58,27 +74,37 @@ class TripBudgetCard extends StatelessWidget {
                   value: cap > 0 ? (total / cap).clamp(0, 1).toDouble() : 0,
                   minHeight: 8,
                   color: over ? AppColors.danger : AppColors.success,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
-                  Icon(over ? Icons.warning_amber_rounded : Icons.check_circle_rounded,
-                      size: 16, color: over ? AppColors.danger : AppColors.success),
+                  Icon(
+                    over
+                        ? Icons.warning_amber_rounded
+                        : Icons.check_circle_rounded,
+                    size: 16,
+                    color: over ? AppColors.danger : AppColors.success,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     over
                         ? '${Formatters.money(total - cap, symbol: sym)} over your budget'
                         : '${Formatters.money(cap - total, symbol: sym)} under your budget',
-                    style: text.bodySmall
-                        ?.copyWith(color: over ? AppColors.danger : AppColors.success),
+                    style: text.bodySmall?.copyWith(
+                      color: over ? AppColors.danger : AppColors.success,
+                    ),
                   ),
                 ],
               ),
             ] else
-              Text('Per person · ${trip.dayCount} ${trip.dayCount == 1 ? 'day' : 'days'}',
-                  style: text.bodySmall),
+              Text(
+                'Per person · ${trip.dayCount} ${trip.dayCount == 1 ? 'day' : 'days'}',
+                style: text.bodySmall,
+              ),
           ],
         ),
       ),
@@ -86,14 +112,16 @@ class TripBudgetCard extends StatelessWidget {
   }
 
   Widget _line(BuildContext context, String label, double amount) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            Text(label, style: Theme.of(context).textTheme.bodyMedium),
-            const Spacer(),
-            Text(Formatters.money(amount, symbol: TripEstimator.symbol),
-                style: Theme.of(context).textTheme.bodyMedium),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        const Spacer(),
+        Text(
+          Formatters.money(amount, symbol: TripEstimator.symbol),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
-      );
+      ],
+    ),
+  );
 }

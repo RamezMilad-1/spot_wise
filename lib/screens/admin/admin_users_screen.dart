@@ -27,18 +27,25 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => context.read<AdminProvider>().loadUsers());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => context.read<AdminProvider>().loadUsers(),
+    );
   }
 
   Future<void> _setRole(AppUser u, UserRole role) async {
     await context.read<AdminProvider>().setUserRole(u, role);
-    if (mounted) AppSnackbar.success(context, '${u.name} is now ${role.label}.');
+    if (mounted) {
+      AppSnackbar.success(context, '${u.name} is now ${role.label}.');
+    }
   }
 
   Future<void> _toggleSuspend(AppUser u) async {
     await context.read<AdminProvider>().toggleSuspended(u);
     if (mounted) {
-      AppSnackbar.show(context, u.suspended ? '${u.name} reinstated.' : '${u.name} suspended.');
+      AppSnackbar.show(
+        context,
+        u.suspended ? '${u.name} reinstated.' : '${u.name} suspended.',
+      );
     }
   }
 
@@ -46,7 +53,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final msg = await _composeNotification(context, target: u.name);
     if (msg == null || !mounted) return;
     await context.read<AdminProvider>().notifyUser(u, msg.$1, msg.$2);
-    if (mounted) AppSnackbar.success(context, 'Notification sent to ${u.name}.');
+    if (mounted) {
+      AppSnackbar.success(context, 'Notification sent to ${u.name}.');
+    }
   }
 
   Future<void> _delete(AppUser u) async {
@@ -65,10 +74,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   Future<void> _notifyAll() async {
     final adminP = context.read<AdminProvider>();
-    final msg = await _composeNotification(context, target: 'all ${adminP.userCount} users');
+    final msg = await _composeNotification(
+      context,
+      target: 'all ${adminP.userCount} users',
+    );
     if (msg == null || !mounted) return;
     await adminP.notifyAllUsers(msg.$1, msg.$2);
-    if (mounted) AppSnackbar.success(context, 'Broadcast sent to ${adminP.userCount} users.');
+    if (mounted) {
+      AppSnackbar.success(
+        context,
+        'Broadcast sent to ${adminP.userCount} users.',
+      );
+    }
   }
 
   @override
@@ -78,7 +95,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final q = _query.trim().toLowerCase();
     final users = q.isEmpty
         ? adminP.users
-        : adminP.users.where((u) => '${u.name} ${u.email}'.toLowerCase().contains(q)).toList();
+        : adminP.users
+              .where((u) => '${u.name} ${u.email}'.toLowerCase().contains(q))
+              .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -107,32 +126,37 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             child: adminP.loadingUsers && adminP.users.isEmpty
                 ? const LoadingView()
                 : users.isEmpty
-                    ? const EmptyView(
-                        icon: Icons.group_outlined,
-                        title: 'No users',
-                        message: 'Nothing matches your search yet.',
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () => adminP.loadUsers(),
-                        child: ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-                          itemCount: users.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
-                          itemBuilder: (_, i) {
-                            final u = users[i];
-                            return _UserCard(
-                              user: u,
-                              isSelf: u.id == myId,
-                              onMakeAdmin: () => _setRole(u, UserRole.admin),
-                              onMakeExplorer: () => _setRole(u, UserRole.user),
-                              onToggleSuspend: () => _toggleSuspend(u),
-                              onNotify: () => _notify(u),
-                              onDelete: () => _delete(u),
-                            );
-                          },
-                        ),
+                ? const EmptyView(
+                    icon: Icons.group_outlined,
+                    title: 'No users',
+                    message: 'Nothing matches your search yet.',
+                  )
+                : RefreshIndicator(
+                    onRefresh: () => adminP.loadUsers(),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        0,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
                       ),
+                      itemCount: users.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (_, i) {
+                        final u = users[i];
+                        return _UserCard(
+                          user: u,
+                          isSelf: u.id == myId,
+                          onMakeAdmin: () => _setRole(u, UserRole.admin),
+                          onMakeExplorer: () => _setRole(u, UserRole.user),
+                          onToggleSuspend: () => _toggleSuspend(u),
+                          onNotify: () => _notify(u),
+                          onDelete: () => _delete(u),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -141,7 +165,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 }
 
 /// Title + message composer dialog. Returns (title, body) or null if cancelled.
-Future<(String, String)?> _composeNotification(BuildContext context, {required String target}) {
+Future<(String, String)?> _composeNotification(
+  BuildContext context, {
+  required String target,
+}) {
   final titleC = TextEditingController();
   final bodyC = TextEditingController();
   return showDialog<(String, String)>(
@@ -166,7 +193,10 @@ Future<(String, String)?> _composeNotification(BuildContext context, {required S
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
           onPressed: () {
             final t = titleC.text.trim();
@@ -208,7 +238,11 @@ class _UserCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
-            UserAvatar(photoUrl: user.photoUrl, initials: user.initials, radius: 24),
+            UserAvatar(
+              photoUrl: user.photoUrl,
+              initials: user.initials,
+              radius: 24,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
@@ -217,26 +251,57 @@ class _UserCard extends StatelessWidget {
                   Row(
                     children: [
                       Flexible(
-                        child: Text(user.name,
-                            style: text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          user.name,
+                          style: text.titleSmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       if (isSelf) ...[
                         const SizedBox(width: 6),
-                        const Pill(label: 'You', icon: Icons.person_rounded, color: AppColors.teal),
+                        const Pill(
+                          label: 'You',
+                          icon: Icons.person_rounded,
+                          color: AppColors.teal,
+                        ),
                       ],
                     ],
                   ),
-                  Text(user.email, style: text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    user.email,
+                    style: text.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      Pill(label: user.role.label, icon: user.role.icon, color: AppColors.teal),
+                      Pill(
+                        label: user.role.label,
+                        icon: user.role.icon,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        background: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                      ),
                       if (user.suspended)
-                        const Pill(label: 'Suspended', icon: Icons.block_rounded, color: AppColors.danger),
+                        const Pill(
+                          label: 'Suspended',
+                          icon: Icons.block_rounded,
+                          color: AppColors.danger,
+                        ),
                       if (user.homeCity != null && user.homeCity!.isNotEmpty)
-                        Pill(label: user.homeCity!, icon: Icons.place_outlined, color: AppColors.inkSoft),
+                        Pill(
+                          label: user.homeCity!,
+                          icon: Icons.place_outlined,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          background: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                        ),
                     ],
                   ),
                 ],
@@ -260,11 +325,23 @@ class _UserCard extends StatelessWidget {
                 },
                 itemBuilder: (_) => [
                   if (user.role != UserRole.admin)
-                    const PopupMenuItem(value: 'admin', child: Text('Make admin'))
+                    const PopupMenuItem(
+                      value: 'admin',
+                      child: Text('Make admin'),
+                    )
                   else
-                    const PopupMenuItem(value: 'explorer', child: Text('Make explorer')),
-                  PopupMenuItem(value: 'suspend', child: Text(user.suspended ? 'Reinstate' : 'Suspend')),
-                  const PopupMenuItem(value: 'notify', child: Text('Send notification')),
+                    const PopupMenuItem(
+                      value: 'explorer',
+                      child: Text('Make explorer'),
+                    ),
+                  PopupMenuItem(
+                    value: 'suspend',
+                    child: Text(user.suspended ? 'Reinstate' : 'Suspend'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'notify',
+                    child: Text('Send notification'),
+                  ),
                   const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
               ),

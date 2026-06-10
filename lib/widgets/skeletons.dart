@@ -38,7 +38,7 @@ class SpotCardSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ShimmerBox(height: 190, radius: AppRadius.brLg),
+        ShimmerBox(height: 210, radius: AppRadius.brCard),
         const SizedBox(height: AppSpacing.md),
         const ShimmerBox(height: 16, width: 180),
         const SizedBox(height: AppSpacing.sm),
@@ -56,7 +56,10 @@ class SpotFeedSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.lg, bottom: AppSpacing.lg),
+      padding: AppSpacing.screenPadding.copyWith(
+        top: AppSpacing.lg,
+        bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
+      ),
       itemCount: count,
       separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xl),
       itemBuilder: (_, _) => const SpotCardSkeleton(),

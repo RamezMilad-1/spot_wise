@@ -63,7 +63,9 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                       iconSize: 40,
                       onPressed: () => setState(() => _rating = i.toDouble()),
                       icon: Icon(
-                        _rating >= i ? Icons.star_rounded : Icons.star_outline_rounded,
+                        _rating >= i
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
                         color: AppColors.amber,
                       ),
                     ),
@@ -80,9 +82,16 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
             const SizedBox(height: AppSpacing.lg),
             Text('Add photos (optional)', style: text.labelLarge),
             const SizedBox(height: AppSpacing.sm),
-            PhotoPickerRow(photos: _photos, onChanged: (p) => setState(() => _photos = p)),
+            PhotoPickerRow(
+              photos: _photos,
+              onChanged: (p) => setState(() => _photos = p),
+            ),
             const SizedBox(height: AppSpacing.xxl),
-            AppButton('Post review', icon: Icons.send_rounded, onPressed: _submit),
+            AppButton(
+              'Post review',
+              icon: Icons.send_rounded,
+              onPressed: _submit,
+            ),
           ],
         ),
       ),

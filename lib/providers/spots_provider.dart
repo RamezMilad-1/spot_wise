@@ -38,7 +38,9 @@ class SpotsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final fresh = await services.backend.getSpots(status: SpotStatus.approved);
+      final fresh = await services.backend.getSpots(
+        status: SpotStatus.approved,
+      );
       _spots = fresh;
       _loading = false;
       notifyListeners();
@@ -87,11 +89,14 @@ class SpotsProvider extends ChangeNotifier {
       _spots.where((s) => s.categoryId == categoryId).toList();
 
   List<Spot> recommendationsFor(AppUser? user, {int limit = 8}) {
-    final interests = (user?.interests ?? const []).map((e) => e.toLowerCase()).toSet();
+    final interests = (user?.interests ?? const [])
+        .map((e) => e.toLowerCase())
+        .toSet();
     final saved = (user?.savedSpotIds ?? const []).toSet();
     int score(Spot s) {
       var sc = (s.rating * 10).round() + s.reviewCount ~/ 80;
-      final hay = '${s.tags.join(' ')} ${Categories.labelFor(s.categoryId)}'.toLowerCase();
+      final hay = '${s.tags.join(' ')} ${Categories.labelFor(s.categoryId)}'
+          .toLowerCase();
       for (final i in interests) {
         if (hay.contains(i)) sc += 30;
       }
@@ -106,7 +111,10 @@ class SpotsProvider extends ChangeNotifier {
 
   List<Spot> get trending {
     final list = [..._spots]
-      ..sort((a, b) => (b.likeCount + b.saveCount).compareTo(a.likeCount + a.saveCount));
+      ..sort(
+        (a, b) =>
+            (b.likeCount + b.saveCount).compareTo(a.likeCount + a.saveCount),
+      );
     return list.take(10).toList();
   }
 
@@ -115,7 +123,9 @@ class SpotsProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final data = spots.map((s) => {'id': s.id, ...s.toJson()}).toList();
       await prefs.setString(_cacheKey, jsonEncode(data));
-    } catch (_) {/* cache is best-effort */}
+    } catch (_) {
+      /* cache is best-effort */
+    }
   }
 
   Future<List<Spot>> _readCache() async {

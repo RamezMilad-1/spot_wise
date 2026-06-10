@@ -73,7 +73,8 @@ class LocalBackendService implements BackendService {
     await _seed();
   }
 
-  Map<dynamic, dynamic> _map(dynamic raw) => Map<dynamic, dynamic>.from(raw as Map);
+  Map<dynamic, dynamic> _map(dynamic raw) =>
+      Map<dynamic, dynamic>.from(raw as Map);
 
   List<T> _all<T>(Box box, T Function(String id, Map json) fromJson) =>
       box.keys.map((k) => fromJson(k.toString(), _map(box.get(k)))).toList();
@@ -112,9 +113,10 @@ class LocalBackendService implements BackendService {
   @override
   Future<List<Review>> getReviews(String spotId) async {
     await Future.delayed(_latency);
-    final list = _all(_reviews, Review.fromJson)
-        .where((r) => r.spotId == spotId)
-        .toList();
+    final list = _all(
+      _reviews,
+      Review.fromJson,
+    ).where((r) => r.spotId == spotId).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
@@ -130,9 +132,10 @@ class LocalBackendService implements BackendService {
   @override
   Future<List<Trip>> getTrips(String userId) async {
     await Future.delayed(_latency);
-    final list = _all(_trips, Trip.fromJson)
-        .where((t) => t.userId == userId)
-        .toList();
+    final list = _all(
+      _trips,
+      Trip.fromJson,
+    ).where((t) => t.userId == userId).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
@@ -150,9 +153,10 @@ class LocalBackendService implements BackendService {
   // ── Notifications ──────────────────────────────────────────────────────
   @override
   Future<List<NotificationItem>> getNotifications(String userId) async {
-    final list = _all(_notifications, NotificationItem.fromJson)
-        .where((n) => n.userId == userId)
-        .toList();
+    final list = _all(
+      _notifications,
+      NotificationItem.fromJson,
+    ).where((n) => n.userId == userId).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
@@ -174,7 +178,10 @@ class LocalBackendService implements BackendService {
   @override
   Future<void> markAllNotificationsRead(String userId) async {
     for (final k in _notifications.keys) {
-      final n = NotificationItem.fromJson(k.toString(), _map(_notifications.get(k)));
+      final n = NotificationItem.fromJson(
+        k.toString(),
+        _map(_notifications.get(k)),
+      );
       if (n.userId == userId && !n.isRead) {
         await _notifications.put(k, n.copyWith(isRead: true).toJson());
       }
@@ -198,7 +205,8 @@ class LocalBackendService implements BackendService {
   }
 
   @override
-  Future<void> updateReport(Report report) => _reports.put(report.id, report.toJson());
+  Future<void> updateReport(Report report) =>
+      _reports.put(report.id, report.toJson());
 
   // ── Users ──────────────────────────────────────────────────────────────
   @override

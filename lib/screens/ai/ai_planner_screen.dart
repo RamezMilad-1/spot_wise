@@ -59,7 +59,11 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
     final ok = await aiP.generate(spotsP.spots);
     if (!mounted) return;
     if (ok && aiP.result != null) {
-      Navigator.pushNamed(context, AppRoutes.itineraryResult, arguments: aiP.result);
+      Navigator.pushNamed(
+        context,
+        AppRoutes.itineraryResult,
+        arguments: aiP.result,
+      );
     } else if (aiP.error != null) {
       AppSnackbar.error(context, aiP.error!);
     }
@@ -83,7 +87,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                 avatar: Icon(
                   aiP.isLive ? Icons.bolt_rounded : Icons.smart_toy_outlined,
                   size: 16,
-                  color: AppColors.tealDark,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 label: Text(aiP.isLive ? 'Gemini' : 'On-device AI'),
                 visualDensity: VisualDensity.compact,
@@ -93,26 +97,38 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
+        ),
         children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              gradient: AppColors.lagoonGradient,
-              borderRadius: AppRadius.brLg,
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 28),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    'Tell me your vibe and I\'ll craft a day-by-day plan from real, approved spots.',
-                    style: text.bodyMedium?.copyWith(color: Colors.white),
-                  ),
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final heroBg = isDark ? AppColors.darkInk : AppColors.ink;
+              final heroFg = isDark ? AppColors.darkBg : Colors.white;
+              return Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: heroBg,
+                  borderRadius: AppRadius.brCard,
                 ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: heroFg, size: 28),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'Tell me your vibe and I\'ll craft a day-by-day plan from real, approved spots.',
+                        style: text.bodyMedium?.copyWith(color: heroFg),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.xl),
           AppTextField(
@@ -145,7 +161,11 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                   child: InkWell(
                     onTap: () => _pickDate(aiP),
                     borderRadius: AppRadius.brMd,
-                    child: _box(context, Formatters.date(aiP.startDate), Icons.calendar_today_rounded),
+                    child: _box(
+                      context,
+                      Formatters.date(aiP.startDate),
+                      Icons.calendar_today_rounded,
+                    ),
                   ),
                 ),
               ),
@@ -156,12 +176,24 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                   child: Row(
                     children: [
                       IconButton.filledTonal(
-                        onPressed: aiP.dayCount > 1 ? () => aiP.setDays(aiP.dayCount - 1) : null,
+                        onPressed: aiP.dayCount > 1
+                            ? () => aiP.setDays(aiP.dayCount - 1)
+                            : null,
+                        style: _stepperStyle(context),
                         icon: const Icon(Icons.remove_rounded),
                       ),
-                      Expanded(child: Text('${aiP.dayCount}', textAlign: TextAlign.center, style: text.titleLarge)),
+                      Expanded(
+                        child: Text(
+                          '${aiP.dayCount}',
+                          textAlign: TextAlign.center,
+                          style: text.titleLarge,
+                        ),
+                      ),
                       IconButton.filledTonal(
-                        onPressed: aiP.dayCount < 14 ? () => aiP.setDays(aiP.dayCount + 1) : null,
+                        onPressed: aiP.dayCount < 14
+                            ? () => aiP.setDays(aiP.dayCount + 1)
+                            : null,
+                        style: _stepperStyle(context),
                         icon: const Icon(Icons.add_rounded),
                       ),
                     ],
@@ -209,8 +241,10 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
             onChanged: (v) => aiP.setBudgetCap(double.tryParse(v.trim())),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text('SpotWise estimates the trip cost from spot prices, meals & transport.',
-              style: text.bodySmall),
+          Text(
+            'SpotWise estimates the trip cost from spot prices, meals & transport.',
+            style: text.bodySmall,
+          ),
           const SizedBox(height: AppSpacing.lg),
           Text('Pace', style: text.labelLarge),
           const SizedBox(height: AppSpacing.sm),
@@ -247,20 +281,30 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
     );
   }
 
+  /// Neutral fill for the +/− day steppers (default tonal is coral-tinted).
+  ButtonStyle _stepperStyle(BuildContext context) => IconButton.styleFrom(
+    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+    foregroundColor: Theme.of(context).colorScheme.onSurface,
+  );
+
   Widget _box(BuildContext context, String label, IconData icon) => Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.brMd,
-          border: Border.all(color: Theme.of(context).colorScheme.outline),
+    padding: const EdgeInsets.all(AppSpacing.lg),
+    decoration: BoxDecoration(
+      borderRadius: AppRadius.brMd,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    ),
+    child: Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18),
-            const SizedBox(width: AppSpacing.sm),
-            Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
-          ],
-        ),
-      );
+        const SizedBox(width: AppSpacing.sm),
+        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+      ],
+    ),
+  );
 }
 
 class _Field extends StatelessWidget {

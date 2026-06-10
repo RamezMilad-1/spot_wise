@@ -49,7 +49,8 @@ class AdminProvider extends ChangeNotifier {
     for (final s in _allSpots.where((s) => s.status == SpotStatus.approved)) {
       counts[s.categoryId] = (counts[s.categoryId] ?? 0) + 1;
     }
-    final entries = counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final entries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
     return entries;
   }
 
@@ -86,7 +87,10 @@ class AdminProvider extends ChangeNotifier {
   }
 
   Future<void> reject(Spot spot, String reason) async {
-    final updated = spot.copyWith(status: SpotStatus.rejected, rejectionReason: reason);
+    final updated = spot.copyWith(
+      status: SpotStatus.rejected,
+      rejectionReason: reason,
+    );
     await services.backend.updateSpot(updated);
     await _notify(
       spot.submittedBy,
@@ -160,7 +164,9 @@ class AdminProvider extends ChangeNotifier {
     await _notify(
       user.id,
       NotificationType.system,
-      role == UserRole.admin ? 'You\'re now an admin 🎉' : 'Your role was updated',
+      role == UserRole.admin
+          ? 'You\'re now an admin 🎉'
+          : 'Your role was updated',
       role == UserRole.admin
           ? 'You can now moderate spots and manage SpotWise.'
           : 'Your account is now a standard Explorer.',
@@ -175,7 +181,9 @@ class AdminProvider extends ChangeNotifier {
     await _notify(
       user.id,
       NotificationType.system,
-      updated.suspended ? 'Your account was suspended' : 'Your account was reinstated',
+      updated.suspended
+          ? 'Your account was suspended'
+          : 'Your account was reinstated',
       updated.suspended
           ? 'You can\'t sign in until an admin reinstates your account.'
           : 'Welcome back — you can sign in again.',
@@ -219,14 +227,16 @@ class AdminProvider extends ChangeNotifier {
     String? spotId,
   }) async {
     if (userId.isEmpty) return;
-    await services.backend.addNotification(NotificationItem(
-      id: '',
-      userId: userId,
-      title: title,
-      body: body,
-      type: type,
-      spotId: spotId,
-      createdAt: DateTime.now(),
-    ));
+    await services.backend.addNotification(
+      NotificationItem(
+        id: '',
+        userId: userId,
+        title: title,
+        body: body,
+        type: type,
+        spotId: spotId,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 }

@@ -45,26 +45,43 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spinnerColor = variant == AppButtonVariant.outline ? AppColors.teal : Colors.white;
+    final spinnerColor = variant == AppButtonVariant.outline
+        ? AppColors.teal
+        : Colors.white;
     final child = loading
         ? SizedBox(
             height: 20,
             width: 20,
-            child: CircularProgressIndicator(strokeWidth: 2.4, color: spinnerColor),
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              color: spinnerColor,
+            ),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
+              if (icon != null) ...[
+                Icon(icon, size: 20),
+                const SizedBox(width: 8),
+              ],
               Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
             ],
           );
 
     final handler = loading ? null : onPressed;
     final Widget button = switch (variant) {
-      AppButtonVariant.primary => FilledButton(onPressed: handler, child: child),
-      AppButtonVariant.accent => ElevatedButton(onPressed: handler, child: child),
-      AppButtonVariant.outline => OutlinedButton(onPressed: handler, child: child),
+      AppButtonVariant.primary => FilledButton(
+        onPressed: handler,
+        child: child,
+      ),
+      AppButtonVariant.accent => ElevatedButton(
+        onPressed: handler,
+        child: child,
+      ),
+      AppButtonVariant.outline => OutlinedButton(
+        onPressed: handler,
+        child: child,
+      ),
     };
 
     return expand ? SizedBox(width: double.infinity, child: button) : button;

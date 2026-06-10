@@ -21,6 +21,11 @@ class AppTheme {
     final surfaceAlt = isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt;
     final border = isDark ? AppColors.darkBorder : AppColors.border;
 
+    // Neutral, high-contrast primary control color (the reference "black" button).
+    // In dark mode it flips to near-white so the button stays visible.
+    final primaryBtn = isDark ? AppColors.darkInk : AppColors.ink;
+    final onPrimaryBtn = isDark ? AppColors.darkBg : Colors.white;
+
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: AppColors.teal,
@@ -54,8 +59,9 @@ class AppTheme {
 
     final textTheme = AppTypography.textTheme(ink, inkSoft);
 
-    OutlineInputBorder inputBorder(Color c, [double w = 1.2]) => OutlineInputBorder(
-          borderRadius: AppRadius.brMd,
+    OutlineInputBorder inputBorder(Color c, [double w = 1.2]) =>
+        OutlineInputBorder(
+          borderRadius: AppRadius.brCard,
           borderSide: BorderSide(color: c, width: w),
         );
 
@@ -73,26 +79,30 @@ class AppTheme {
         backgroundColor: bg,
         foregroundColor: ink,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: 0,
         centerTitle: false,
+        titleSpacing: AppSpacing.lg,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: textTheme.titleLarge,
         iconTheme: IconThemeData(color: ink),
       ),
       cardTheme: CardThemeData(
         color: surface,
-        elevation: 0,
+        elevation: isDark ? 0 : 3,
+        shadowColor: Colors.black.withValues(alpha: 0.10),
+        surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.brLg,
-          side: BorderSide(color: border),
+          borderRadius: AppRadius.brCard,
+          // Hairline only in dark mode (shadows read poorly on dark surfaces).
+          side: isDark ? BorderSide(color: border) : BorderSide.none,
         ),
       ),
       dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? AppColors.darkSurfaceAlt : AppColors.surface,
+        fillColor: surfaceAlt,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.lg,
@@ -101,8 +111,9 @@ class AppTheme {
           color: isDark ? AppColors.darkInkFaint : AppColors.inkFaint,
         ),
         labelStyle: textTheme.bodyMedium,
-        border: inputBorder(border),
-        enabledBorder: inputBorder(border),
+        // Borderless at rest (the fill defines the field); teal ring on focus.
+        border: inputBorder(Colors.transparent),
+        enabledBorder: inputBorder(Colors.transparent),
         focusedBorder: inputBorder(AppColors.teal, 1.6),
         errorBorder: inputBorder(AppColors.danger),
         focusedErrorBorder: inputBorder(AppColors.danger, 1.6),
@@ -111,11 +122,11 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.teal,
-          foregroundColor: Colors.white,
+          backgroundColor: primaryBtn,
+          foregroundColor: onPrimaryBtn,
           minimumSize: const Size.fromHeight(54),
           textStyle: textTheme.labelLarge?.copyWith(fontSize: 15),
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
+          shape: const StadiumBorder(),
           elevation: 0,
         ),
       ),
@@ -125,7 +136,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(54),
           textStyle: textTheme.labelLarge?.copyWith(fontSize: 15),
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
+          shape: const StadiumBorder(),
           elevation: 0,
         ),
       ),
@@ -133,9 +144,12 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: ink,
           minimumSize: const Size.fromHeight(54),
-          side: BorderSide(color: border, width: 1.4),
+          side: BorderSide(
+            color: isDark ? border : AppColors.inkFaint,
+            width: 1.3,
+          ),
           textStyle: textTheme.labelLarge,
-          shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
+          shape: const StadiumBorder(),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -146,29 +160,36 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: surfaceAlt,
-        selectedColor: AppColors.teal,
-        secondarySelectedColor: AppColors.teal,
-        checkmarkColor: Colors.white,
-        labelStyle: textTheme.labelMedium,
-        secondaryLabelStyle: textTheme.labelMedium?.copyWith(color: Colors.white),
-        side: BorderSide(color: border),
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brSm),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        selectedColor: primaryBtn,
+        secondarySelectedColor: primaryBtn,
+        checkmarkColor: onPrimaryBtn,
+        // WidgetStateColor so FilterChip labels flip with the ink fill.
+        labelStyle: textTheme.labelMedium?.copyWith(
+          color: WidgetStateColor.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? onPrimaryBtn : ink,
+          ),
+        ),
+        secondaryLabelStyle: textTheme.labelMedium?.copyWith(
+          color: onPrimaryBtn,
+        ),
+        side: BorderSide.none,
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface,
-        indicatorColor: AppColors.tealMist,
+        indicatorColor: surfaceAlt,
         elevation: 0,
         height: 68,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
-            color: states.contains(WidgetState.selected) ? AppColors.tealDark : inkSoft,
+            color: states.contains(WidgetState.selected) ? ink : inkSoft,
           ),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => textTheme.labelMedium?.copyWith(
-            color: states.contains(WidgetState.selected) ? AppColors.tealDark : inkSoft,
+            color: states.contains(WidgetState.selected) ? ink : inkSoft,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -176,8 +197,11 @@ class AppTheme {
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
+        clipBehavior: Clip.antiAlias,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
         ),
         showDragHandle: true,
         dragHandleColor: border,
@@ -185,7 +209,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brLg),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
         titleTextStyle: textTheme.titleLarge,
         contentTextStyle: textTheme.bodyMedium,
       ),
@@ -198,10 +222,65 @@ class AppTheme {
         insetPadding: const EdgeInsets.all(AppSpacing.lg),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.coral,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
+        backgroundColor: primaryBtn,
+        foregroundColor: onPrimaryBtn,
+        elevation: 3,
+        shape: const StadiumBorder(),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          backgroundColor: surfaceAlt,
+          foregroundColor: ink,
+          selectedBackgroundColor: primaryBtn,
+          selectedForegroundColor: onPrimaryBtn,
+          side: BorderSide.none,
+          shape: const StadiumBorder(),
+          textStyle: textTheme.labelLarge,
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 6,
+        shadowColor: Colors.black.withValues(alpha: 0.14),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brLg),
+        textStyle: textTheme.bodyMedium,
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? primaryBtn
+              : Colors.transparent,
+        ),
+        checkColor: WidgetStatePropertyAll(onPrimaryBtn),
+        side: BorderSide(color: inkSoft, width: 1.6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? primaryBtn : inkSoft,
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        headerBackgroundColor: surface,
+        headerForegroundColor: ink,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.brXl),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: ink,
+        unselectedLabelColor: inkSoft,
+        indicatorColor: ink,
+        dividerColor: border,
+        labelStyle: textTheme.labelLarge,
+        unselectedLabelStyle: textTheme.labelLarge,
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: ink,
+          minimumSize: const Size(44, 44),
+        ),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(

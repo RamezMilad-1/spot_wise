@@ -39,32 +39,32 @@ class TripStop {
   LatLng get latLng => LatLng(lat, lng);
 
   factory TripStop.fromJson(Map<dynamic, dynamic> json) => TripStop(
-        spotId: JsonUtils.asString(json['spotId']),
-        name: JsonUtils.asString(json['name']),
-        photo: JsonUtils.asStringOrNull(json['photo']),
-        categoryId: JsonUtils.asString(json['category'], 'sightseeing'),
-        lat: JsonUtils.asDouble(json['lat']),
-        lng: JsonUtils.asDouble(json['lng']),
-        dayPart: DayPart.fromString(JsonUtils.asStringOrNull(json['dayPart'])),
-        note: JsonUtils.asString(json['note']),
-        suggestedTime: JsonUtils.asString(json['suggestedTime']),
-        estimatedCost: JsonUtils.asDouble(json['estimatedCost']),
-        durationMinutes: JsonUtils.asInt(json['durationMinutes']),
-      );
+    spotId: JsonUtils.asString(json['spotId']),
+    name: JsonUtils.asString(json['name']),
+    photo: JsonUtils.asStringOrNull(json['photo']),
+    categoryId: JsonUtils.asString(json['category'], 'sightseeing'),
+    lat: JsonUtils.asDouble(json['lat']),
+    lng: JsonUtils.asDouble(json['lng']),
+    dayPart: DayPart.fromString(JsonUtils.asStringOrNull(json['dayPart'])),
+    note: JsonUtils.asString(json['note']),
+    suggestedTime: JsonUtils.asString(json['suggestedTime']),
+    estimatedCost: JsonUtils.asDouble(json['estimatedCost']),
+    durationMinutes: JsonUtils.asInt(json['durationMinutes']),
+  );
 
   Map<String, dynamic> toJson() => {
-        'spotId': spotId,
-        'name': name,
-        'photo': photo,
-        'category': categoryId,
-        'lat': lat,
-        'lng': lng,
-        'dayPart': dayPart.value,
-        'note': note,
-        'suggestedTime': suggestedTime,
-        'estimatedCost': estimatedCost,
-        'durationMinutes': durationMinutes,
-      };
+    'spotId': spotId,
+    'name': name,
+    'photo': photo,
+    'category': categoryId,
+    'lat': lat,
+    'lng': lng,
+    'dayPart': dayPart.value,
+    'note': note,
+    'suggestedTime': suggestedTime,
+    'estimatedCost': estimatedCost,
+    'durationMinutes': durationMinutes,
+  };
 
   TripStop copyWith({
     DayPart? dayPart,
@@ -72,20 +72,19 @@ class TripStop {
     String? suggestedTime,
     double? estimatedCost,
     int? durationMinutes,
-  }) =>
-      TripStop(
-        spotId: spotId,
-        name: name,
-        photo: photo,
-        categoryId: categoryId,
-        lat: lat,
-        lng: lng,
-        dayPart: dayPart ?? this.dayPart,
-        note: note ?? this.note,
-        suggestedTime: suggestedTime ?? this.suggestedTime,
-        estimatedCost: estimatedCost ?? this.estimatedCost,
-        durationMinutes: durationMinutes ?? this.durationMinutes,
-      );
+  }) => TripStop(
+    spotId: spotId,
+    name: name,
+    photo: photo,
+    categoryId: categoryId,
+    lat: lat,
+    lng: lng,
+    dayPart: dayPart ?? this.dayPart,
+    note: note ?? this.note,
+    suggestedTime: suggestedTime ?? this.suggestedTime,
+    estimatedCost: estimatedCost ?? this.estimatedCost,
+    durationMinutes: durationMinutes ?? this.durationMinutes,
+  );
 }
 
 /// One day of a trip, holding an ordered list of stops.
@@ -105,20 +104,20 @@ class TripDay {
   });
 
   factory TripDay.fromJson(Map<dynamic, dynamic> json) => TripDay(
-        dayNumber: JsonUtils.asInt(json['dayNumber'], 1),
-        date: json['date'] == null ? null : JsonUtils.asDate(json['date']),
-        title: JsonUtils.asString(json['title']),
-        summary: JsonUtils.asString(json['summary']),
-        stops: JsonUtils.asMapList(json['stops']).map(TripStop.fromJson).toList(),
-      );
+    dayNumber: JsonUtils.asInt(json['dayNumber'], 1),
+    date: json['date'] == null ? null : JsonUtils.asDate(json['date']),
+    title: JsonUtils.asString(json['title']),
+    summary: JsonUtils.asString(json['summary']),
+    stops: JsonUtils.asMapList(json['stops']).map(TripStop.fromJson).toList(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'dayNumber': dayNumber,
-        'date': date?.millisecondsSinceEpoch,
-        'title': title,
-        'summary': summary,
-        'stops': stops.map((e) => e.toJson()).toList(),
-      };
+    'dayNumber': dayNumber,
+    'date': date?.millisecondsSinceEpoch,
+    'title': title,
+    'summary': summary,
+    'stops': stops.map((e) => e.toJson()).toList(),
+  };
 
   TripDay copyWith({String? title, String? summary, List<TripStop>? stops}) =>
       TripDay(
@@ -181,7 +180,8 @@ class Trip {
       ? days.length
       : (endDate.difference(startDate).inDays + 1).clamp(1, 365);
   int get stopCount => days.fold(0, (sum, d) => sum + d.stops.length);
-  LatLng? get latLng => (lat != null && lng != null) ? LatLng(lat!, lng!) : null;
+  LatLng? get latLng =>
+      (lat != null && lng != null) ? LatLng(lat!, lng!) : null;
 
   /// True when an estimate exists and exceeds the traveller's cap.
   bool get overBudget => budgetCap != null && estimatedCost > budgetCap!;
@@ -203,29 +203,31 @@ class Trip {
       coverPhoto: JsonUtils.asStringOrNull(json['coverPhoto']),
       createdAt: JsonUtils.asDate(json['createdAt']),
       estimatedCost: JsonUtils.asDouble(json['estimatedCost']),
-      budgetCap: json['budgetCap'] == null ? null : JsonUtils.asDouble(json['budgetCap']),
+      budgetCap: json['budgetCap'] == null
+          ? null
+          : JsonUtils.asDouble(json['budgetCap']),
       currency: JsonUtils.asString(json['currency'], 'USD'),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'userId': userId,
-        'destination': destination,
-        'country': country,
-        'lat': lat,
-        'lng': lng,
-        'startDate': startDate.millisecondsSinceEpoch,
-        'endDate': endDate.millisecondsSinceEpoch,
-        'days': days.map((e) => e.toJson()).toList(),
-        'notes': notes,
-        'aiGenerated': aiGenerated,
-        'completed': completed,
-        'coverPhoto': coverPhoto,
-        'createdAt': createdAt.millisecondsSinceEpoch,
-        'estimatedCost': estimatedCost,
-        'budgetCap': budgetCap,
-        'currency': currency,
-      };
+    'userId': userId,
+    'destination': destination,
+    'country': country,
+    'lat': lat,
+    'lng': lng,
+    'startDate': startDate.millisecondsSinceEpoch,
+    'endDate': endDate.millisecondsSinceEpoch,
+    'days': days.map((e) => e.toJson()).toList(),
+    'notes': notes,
+    'aiGenerated': aiGenerated,
+    'completed': completed,
+    'coverPhoto': coverPhoto,
+    'createdAt': createdAt.millisecondsSinceEpoch,
+    'estimatedCost': estimatedCost,
+    'budgetCap': budgetCap,
+    'currency': currency,
+  };
 
   Trip copyWith({
     String? destination,

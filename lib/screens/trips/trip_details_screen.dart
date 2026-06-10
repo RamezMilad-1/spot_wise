@@ -19,6 +19,7 @@ import '../../providers/spots_provider.dart';
 import '../../providers/trips_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/feedback.dart';
+import '../../widgets/glass_icon_button.dart';
 import '../../widgets/network_photo.dart';
 import '../../widgets/spot_list_tile.dart';
 import '../../widgets/spot_marker.dart';
@@ -33,7 +34,9 @@ class TripDetailsScreen extends StatefulWidget {
 }
 
 class _TripDetailsScreenState extends State<TripDetailsScreen> {
-  late final TextEditingController _notes = TextEditingController(text: widget.trip.notes);
+  late final TextEditingController _notes = TextEditingController(
+    text: widget.trip.notes,
+  );
   final _debouncer = Debouncer();
 
   @override
@@ -63,15 +66,19 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   Future<void> _remind(Trip trip) async {
     final user = context.read<AuthProvider>().user;
     if (user == null) return;
-    await context.read<NotificationsProvider>().add(NotificationItem(
-          id: '',
-          userId: user.id,
-          title: 'Trip reminder set',
-          body: 'We\'ll remind you about your ${trip.destination} trip.',
-          type: NotificationType.tripReminder,
-          createdAt: DateTime.now(),
-        ));
-    if (mounted) AppSnackbar.success(context, 'Reminder added to your notifications.');
+    await context.read<NotificationsProvider>().add(
+      NotificationItem(
+        id: '',
+        userId: user.id,
+        title: 'Trip reminder set',
+        body: 'We\'ll remind you about your ${trip.destination} trip.',
+        type: NotificationType.tripReminder,
+        createdAt: DateTime.now(),
+      ),
+    );
+    if (mounted) {
+      AppSnackbar.success(context, 'Reminder added to your notifications.');
+    }
   }
 
   void _openStop(TripStop stop) {
@@ -104,8 +111,12 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     final used = trip.days.expand((d) => d.stops).map((s) => s.spotId).toSet();
     final candidates = spotsP.spots.where((s) => !used.contains(s.id)).toList()
       ..sort((a, b) {
-        final ac = a.city.toLowerCase() == trip.destination.toLowerCase() ? 0 : 1;
-        final bc = b.city.toLowerCase() == trip.destination.toLowerCase() ? 0 : 1;
+        final ac = a.city.toLowerCase() == trip.destination.toLowerCase()
+            ? 0
+            : 1;
+        final bc = b.city.toLowerCase() == trip.destination.toLowerCase()
+            ? 0
+            : 1;
         return ac.compareTo(bc);
       });
 
@@ -119,7 +130,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
-              child: Text('Add a spot', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              child: Text(
+                'Add a spot',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
             ),
             Expanded(
               child: ListView.separated(
@@ -131,7 +145,11 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                   spot: candidates[i],
                   trailing: const Icon(Icons.add_circle_outline_rounded),
                   onTap: () async {
-                    await context.read<TripsProvider>().addSpotToTrip(trip, candidates[i], dayNumber: dayNumber);
+                    await context.read<TripsProvider>().addSpotToTrip(
+                      trip,
+                      candidates[i],
+                      dayNumber: dayNumber,
+                    );
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
                 ),
@@ -145,7 +163,8 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final trip = context.watch<TripsProvider>().byId(widget.trip.id) ?? widget.trip;
+    final trip =
+        context.watch<TripsProvider>().byId(widget.trip.id) ?? widget.trip;
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -154,14 +173,33 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
-            actions: [
-              IconButton(
-                tooltip: trip.completed ? 'Mark as not done' : 'Mark complete',
-                icon: Icon(trip.completed ? Icons.check_circle_rounded : Icons.check_circle_outline_rounded),
-                color: trip.completed ? AppColors.success : null,
-                onPressed: () => context.read<TripsProvider>().toggleComplete(trip),
+            automaticallyImplyLeading: false,
+            leadingWidth: 64,
+            leading: Align(
+              child: GlassIconButton(
+                icon: Icons.arrow_back_rounded,
+                tooltip: 'Back',
+                onTap: () => Navigator.pop(context),
               ),
+            ),
+            actions: [
+              Align(
+                child: GlassIconButton(
+                  icon: trip.completed
+                      ? Icons.check_circle_rounded
+                      : Icons.check_circle_outline_rounded,
+                  iconColor: trip.completed ? AppColors.success : null,
+                  tooltip: trip.completed
+                      ? 'Mark as not done'
+                      : 'Mark complete',
+                  onTap: () =>
+                      context.read<TripsProvider>().toggleComplete(trip),
+                ),
+              ),
+              const SizedBox(width: 6),
               PopupMenuButton<String>(
+                tooltip: 'More',
+                icon: const GlassIconButton(icon: Icons.more_horiz_rounded),
                 onSelected: (v) {
                   if (v == 'delete') _delete();
                   if (v == 'remind') _remind(trip);
@@ -171,74 +209,98 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                   PopupMenuItem(value: 'delete', child: Text('Delete trip')),
                 ],
               ),
+              const SizedBox(width: AppSpacing.md),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(trip.destination, style: const TextStyle(color: Colors.white)),
+              title: Text(
+                trip.destination,
+                style: const TextStyle(color: Colors.white),
+              ),
               background: Stack(
                 fit: StackFit.expand,
                 children: [
                   NetworkPhoto(trip.coverPhoto, fit: BoxFit.cover),
-                  const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.photoScrim)),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(gradient: AppColors.photoScrim),
+                  ),
                 ],
               ),
             ),
           ),
-          SliverList.list(children: [
-            _StopsMap(trip: trip),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                children: [
-                  Icon(Icons.calendar_today_rounded, size: 16, color: text.bodySmall?.color),
-                  const SizedBox(width: 6),
-                  Text(Formatters.dateRange(trip.startDate, trip.endDate), style: text.bodyMedium),
-                  const Spacer(),
-                  if (trip.aiGenerated)
-                    const Padding(
-                      padding: EdgeInsets.only(right: 6),
-                      child: Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.teal),
+          SliverList.list(
+            children: [
+              _StopsMap(trip: trip),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
+                      color: text.bodySmall?.color,
                     ),
-                  Text('${trip.stopCount} stops', style: text.bodySmall),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-              child: TripBudgetCard(trip: trip),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: TextField(
-                controller: _notes,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Trip notes',
-                  hintText: 'Flights, hotel, anything to remember…',
+                    const SizedBox(width: 6),
+                    Text(
+                      Formatters.dateRange(trip.startDate, trip.endDate),
+                      style: text.bodyMedium,
+                    ),
+                    const Spacer(),
+                    if (trip.aiGenerated)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 6),
+                        child: Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 16,
+                          color: AppColors.teal,
+                        ),
+                      ),
+                    Text('${trip.stopCount} stops', style: text.bodySmall),
+                  ],
                 ),
-                onChanged: (v) => _debouncer.run(() {
-                  context.read<TripsProvider>().updateNotes(_trip, v);
-                }),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            for (final day in trip.days)
-              _DaySection(
-                trip: trip,
-                day: day,
-                onAddStop: () => _addStop(trip, day.dayNumber),
-                onOpenStop: _openStop,
-                onOpenRoute: () => _openDayRoute(day),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                ),
+                child: TripBudgetCard(trip: trip),
               ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: AppButton.outline(
-                'Add a day',
-                icon: Icons.add_rounded,
-                onPressed: () => context.read<TripsProvider>().addDay(trip),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: TextField(
+                  controller: _notes,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Trip notes',
+                    hintText: 'Flights, hotel, anything to remember…',
+                  ),
+                  onChanged: (v) => _debouncer.run(() {
+                    context.read<TripsProvider>().updateNotes(_trip, v);
+                  }),
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-          ]),
+              const SizedBox(height: AppSpacing.lg),
+              for (final day in trip.days)
+                _DaySection(
+                  trip: trip,
+                  day: day,
+                  onAddStop: () => _addStop(trip, day.dayNumber),
+                  onOpenStop: _openStop,
+                  onOpenRoute: () => _openDayRoute(day),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: AppButton.outline(
+                  'Add a day',
+                  icon: Icons.add_rounded,
+                  onPressed: () => context.read<TripsProvider>().addDay(trip),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+            ],
+          ),
         ],
       ),
     );
@@ -309,7 +371,12 @@ class _DaySection extends StatelessWidget {
     final dayCost = day.stops.fold<double>(0, (s, st) => s + st.estimatedCost);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -317,16 +384,26 @@ class _DaySection extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: AppColors.tealMist,
-                child: Text('${day.dayNumber}',
-                    style: const TextStyle(color: AppColors.tealDark, fontWeight: FontWeight.w800)),
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                child: Text(
+                  '${day.dayNumber}',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(day.title.isEmpty ? 'Day ${day.dayNumber}' : day.title, style: text.titleMedium),
+                    Text(
+                      day.title.isEmpty ? 'Day ${day.dayNumber}' : day.title,
+                      style: text.titleMedium,
+                    ),
                     if (day.date != null)
                       Text(
                         '${Formatters.weekday(day.date!)}${dayCost > 0 ? ' · ${Formatters.money(dayCost)}' : ''}',
@@ -358,7 +435,8 @@ class _DaySection extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               buildDefaultDragHandles: true,
-              onReorder: (oldI, newI) => tripsP.reorderStops(trip, day.dayNumber, oldI, newI),
+              onReorder: (oldI, newI) =>
+                  tripsP.reorderStops(trip, day.dayNumber, oldI, newI),
               children: [
                 for (var i = 0; i < day.stops.length; i++)
                   _StopTile(
@@ -379,7 +457,12 @@ class _StopTile extends StatelessWidget {
   final TripStop stop;
   final VoidCallback onRemove;
   final VoidCallback onTap;
-  const _StopTile({super.key, required this.stop, required this.onRemove, required this.onTap});
+  const _StopTile({
+    super.key,
+    required this.stop,
+    required this.onRemove,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -395,33 +478,53 @@ class _StopTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Material(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: AppRadius.brMd,
+        borderRadius: AppRadius.brLg,
         child: InkWell(
           onTap: onTap,
-          borderRadius: AppRadius.brMd,
+          borderRadius: AppRadius.brLg,
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              borderRadius: AppRadius.brMd,
+              borderRadius: AppRadius.brLg,
               border: Border.all(color: Theme.of(context).colorScheme.outline),
             ),
             child: Row(
               children: [
-                NetworkPhoto(stop.photo, width: 48, height: 48, radius: AppRadius.brSm),
+                NetworkPhoto(
+                  stop.photo,
+                  width: 48,
+                  height: 48,
+                  radius: AppRadius.brMd,
+                ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(stop.name, style: text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(
+                        stop.name,
+                        style: text.titleSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(stop.dayPart.icon, size: 13, color: AppColors.teal),
+                          Icon(
+                            stop.dayPart.icon,
+                            size: 13,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
-                            child: Text(sub,
-                                style: text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            child: Text(
+                              sub,
+                              style: text.bodySmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),

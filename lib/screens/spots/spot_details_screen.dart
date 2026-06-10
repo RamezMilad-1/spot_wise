@@ -16,6 +16,7 @@ import '../../providers/trips_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/badges.dart';
 import '../../widgets/feedback.dart';
+import '../../widgets/glass_icon_button.dart';
 import '../../widgets/network_photo.dart';
 import '../../widgets/rating_stars.dart';
 import '../../widgets/section_header.dart';
@@ -60,28 +61,58 @@ class _SpotDetailsView extends StatelessWidget {
     final saved = auth.isSaved(spot.id);
 
     return Scaffold(
+      // White (surface) canvas so the rounded content panel reads as one
+      // editorial sheet under the photo header.
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: 320,
             pinned: true,
             backgroundColor: Theme.of(context).colorScheme.surface,
+            automaticallyImplyLeading: false,
+            leadingWidth: 64,
+            leading: Align(
+              child: GlassIconButton(
+                icon: Icons.arrow_back_rounded,
+                tooltip: 'Back',
+                onTap: () => Navigator.pop(context),
+              ),
+            ),
             actions: [
-              IconButton(
-                icon: Icon(saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: AppColors.coral),
-                onPressed: () => _toggleSave(context, spot.id),
-              ),
-              IconButton(
-                icon: const Icon(Icons.flag_outlined),
-                onPressed: () => _report(context),
-              ),
-              if (auth.user?.isAdmin ?? false)
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Edit spot',
-                  onPressed: () => Navigator.pushNamed(context, AppRoutes.editSpot, arguments: spot),
+              Align(
+                child: GlassIconButton(
+                  icon: saved
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  iconColor: saved ? AppColors.coral : AppColors.ink,
+                  tooltip: saved ? 'Saved' : 'Save',
+                  onTap: () => _toggleSave(context, spot.id),
                 ),
+              ),
+              const SizedBox(width: 6),
+              Align(
+                child: GlassIconButton(
+                  icon: Icons.flag_outlined,
+                  tooltip: 'Report',
+                  onTap: () => _report(context),
+                ),
+              ),
+              if (auth.user?.isAdmin ?? false) ...[
+                const SizedBox(width: 6),
+                Align(
+                  child: GlassIconButton(
+                    icon: Icons.edit_outlined,
+                    tooltip: 'Edit spot',
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.editSpot,
+                      arguments: spot,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(width: AppSpacing.md),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: _PhotoCarousel(photos: spot.photos),
@@ -95,17 +126,30 @@ class _SpotDetailsView extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: Text(spot.name, style: text.headlineSmall)),
+                      Expanded(
+                        child: Text(spot.name, style: text.headlineSmall),
+                      ),
                       const SizedBox(width: AppSpacing.sm),
-                      RatingStars(spot.rating, size: 18, showValue: true, count: spot.reviewCount),
+                      RatingStars(
+                        spot.rating,
+                        size: 18,
+                        showValue: true,
+                        count: spot.reviewCount,
+                      ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
-                      Icon(Icons.place_outlined, size: 18, color: text.bodySmall?.color),
+                      Icon(
+                        Icons.place_outlined,
+                        size: 18,
+                        color: text.bodySmall?.color,
+                      ),
                       const SizedBox(width: 4),
-                      Expanded(child: Text(spot.location, style: text.bodyLarge)),
+                      Expanded(
+                        child: Text(spot.location, style: text.bodyLarge),
+                      ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -118,15 +162,26 @@ class _SpotDetailsView extends StatelessWidget {
                       if (spot.verified) const VerifiedBadge(),
                       if (spot.hiddenGem) const HiddenGemBadge(),
                       if (spot.familyFriendly)
-                        const Pill(label: 'Family', icon: Icons.family_restroom_rounded, color: AppColors.teal),
+                        const Pill(
+                          label: 'Family',
+                          icon: Icons.family_restroom_rounded,
+                          color: AppColors.teal,
+                        ),
                     ],
                   ),
                   if (spot.bestTimeToVisit.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.lg),
-                    _InfoRow(icon: Icons.schedule_rounded, label: 'Best time', value: spot.bestTimeToVisit),
+                    _InfoRow(
+                      icon: Icons.schedule_rounded,
+                      label: 'Best time',
+                      value: spot.bestTimeToVisit,
+                    ),
                   ],
                   const SizedBox(height: AppSpacing.lg),
-                  Text(spot.description, style: text.bodyLarge?.copyWith(height: 1.5)),
+                  Text(
+                    spot.description,
+                    style: text.bodyLarge?.copyWith(height: 1.5),
+                  ),
                   if (spot.tags.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.lg),
                     Wrap(
@@ -150,7 +205,9 @@ class _SpotDetailsView extends StatelessWidget {
           SliverToBoxAdapter(
             child: SectionHeader(
               title: 'Reviews',
-              subtitle: spot.reviewCount == 0 ? 'Be the first to review' : '${spot.reviewCount} traveller reviews',
+              subtitle: spot.reviewCount == 0
+                  ? 'Be the first to review'
+                  : '${spot.reviewCount} traveller reviews',
               actionLabel: 'Write',
               onAction: () => _writeReview(context),
             ),
@@ -170,10 +227,20 @@ class _SpotDetailsView extends StatelessWidget {
   Future<void> _writeReview(BuildContext context) async {
     if (!await ensureLoggedIn(context) || !context.mounted) return;
     final detailsP = context.read<SpotDetailsProvider>();
-    final result = await Navigator.pushNamed(context, AppRoutes.addReview, arguments: detailsP.spot);
+    final result = await Navigator.pushNamed(
+      context,
+      AppRoutes.addReview,
+      arguments: detailsP.spot,
+    );
     if (result is (double, String, List<String>)) {
-      await detailsP.addReview(rating: result.$1, comment: result.$2, photos: result.$3);
-      if (context.mounted) AppSnackbar.success(context, 'Thanks for your review!');
+      await detailsP.addReview(
+        rating: result.$1,
+        comment: result.$2,
+        photos: result.$3,
+      );
+      if (context.mounted) {
+        AppSnackbar.success(context, 'Thanks for your review!');
+      }
     }
   }
 
@@ -187,10 +254,15 @@ class _SpotDetailsView extends StatelessWidget {
         content: TextField(
           controller: controller,
           maxLines: 3,
-          decoration: const InputDecoration(hintText: 'What\'s wrong with this listing?'),
+          decoration: const InputDecoration(
+            hintText: 'What\'s wrong with this listing?',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
             child: const Text('Submit'),
@@ -200,7 +272,12 @@ class _SpotDetailsView extends StatelessWidget {
     );
     if (reason != null && reason.isNotEmpty) {
       await detailsP.report(reason);
-      if (context.mounted) AppSnackbar.success(context, 'Report submitted. Our admins will take a look.');
+      if (context.mounted) {
+        AppSnackbar.success(
+          context,
+          'Report submitted. Our admins will take a look.',
+        );
+      }
     }
   }
 
@@ -215,24 +292,44 @@ class _SpotDetailsView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: Text('Add to a trip', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Text(
+                'Add to a trip',
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
             ),
             if (tripsP.trips.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(AppSpacing.lg),
-                child: Text('You have no trips yet — create one to start planning.'),
+                child: Text(
+                  'You have no trips yet — create one to start planning.',
+                ),
               ),
             for (final trip in tripsP.trips)
               ListTile(
-                leading: const Icon(Icons.luggage_rounded),
+                leading: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.luggage_rounded, size: 20),
+                ),
                 title: Text(trip.destination),
-                subtitle: Text('${trip.dayCount} days · ${trip.stopCount} stops'),
+                subtitle: Text(
+                  '${trip.dayCount} days · ${trip.stopCount} stops',
+                ),
                 onTap: () async {
                   await tripsP.addSpotToTrip(trip, spot);
                   if (ctx.mounted) Navigator.pop(ctx);
-                  if (context.mounted) AppSnackbar.success(context, 'Added to ${trip.destination}');
+                  if (context.mounted) {
+                    AppSnackbar.success(
+                      context,
+                      'Added to ${trip.destination}',
+                    );
+                  }
                 },
               ),
             Padding(
@@ -242,7 +339,11 @@ class _SpotDetailsView extends StatelessWidget {
                 icon: Icons.add_rounded,
                 onPressed: () {
                   Navigator.pop(ctx);
-                  Navigator.pushNamed(context, AppRoutes.createTrip, arguments: spot);
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.createTrip,
+                    arguments: spot,
+                  );
                 },
               ),
             ),
@@ -283,28 +384,46 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
           onPageChanged: (i) => setState(() => _index = i),
           itemBuilder: (_, i) => NetworkPhoto(photos[i], fit: BoxFit.cover),
         ),
-        const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.photoScrim)),
+        const DecoratedBox(
+          decoration: BoxDecoration(gradient: AppColors.photoScrim),
+        ),
         if (photos.length > 1)
           Positioned(
-            bottom: 12,
+            bottom: 36,
             left: 0,
             right: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 for (var i = 0; i < photos.length; i++)
-                  Container(
-                    width: 7,
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: i == _index ? 18 : 7,
                     height: 7,
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(4),
                       color: i == _index ? Colors.white : Colors.white54,
                     ),
                   ),
               ],
             ),
           ),
+        // Rounded lip that curves the content panel up into the photo.
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 24,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.xl),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -327,21 +446,28 @@ class _MiniMap extends StatelessWidget {
               options: MapOptions(
                 initialCenter: spot.latLng,
                 initialZoom: 14,
-                interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
               ),
               children: [
                 TileLayer(
                   urlTemplate: AppConfig.osmTileUrl,
                   userAgentPackageName: AppConfig.osmUserAgent,
                 ),
-                MarkerLayer(markers: [
-                  Marker(
-                    point: spot.latLng,
-                    width: 44,
-                    height: 44,
-                    child: SpotMarker(categoryId: spot.categoryId, selected: true),
-                  ),
-                ]),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: spot.latLng,
+                      width: 44,
+                      height: 44,
+                      child: SpotMarker(
+                        categoryId: spot.categoryId,
+                        selected: true,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
             Positioned.fill(
@@ -361,16 +487,26 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.teal),
+        Icon(
+          icon,
+          size: 18,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: AppSpacing.sm),
         Text('$label: ', style: Theme.of(context).textTheme.titleSmall),
-        Expanded(child: Text(value, style: Theme.of(context).textTheme.bodyMedium)),
+        Expanded(
+          child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
+        ),
       ],
     );
   }
@@ -384,15 +520,25 @@ class _ReviewsSliver extends StatelessWidget {
   Widget build(BuildContext context) {
     if (detailsP.loading) {
       return const SliverToBoxAdapter(
-        child: Padding(padding: EdgeInsets.all(AppSpacing.xl), child: Center(child: CircularProgressIndicator())),
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          child: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
     if (detailsP.reviews.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-          child: Text('No reviews yet. Share your experience!',
-              style: Theme.of(context).textTheme.bodyMedium),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          child: Text(
+            'No reviews yet. Share your experience!',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
       );
     }
@@ -401,31 +547,53 @@ class _ReviewsSliver extends StatelessWidget {
       itemBuilder: (context, i) {
         final r = detailsP.reviews[i];
         return Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  UserAvatar(photoUrl: r.userPhoto, initials: _initials(r.userName), radius: 18),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(r.userName, style: Theme.of(context).textTheme.titleSmall),
-                        Text(Formatters.relative(r.createdAt),
-                            style: Theme.of(context).textTheme.bodySmall),
-                      ],
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.md,
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+              borderRadius: AppRadius.brLg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    UserAvatar(
+                      photoUrl: r.userPhoto,
+                      initials: _initials(r.userName),
+                      radius: 18,
                     ),
-                  ),
-                  RatingStars(r.rating, size: 14),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(r.comment, style: Theme.of(context).textTheme.bodyMedium),
-              const Divider(height: AppSpacing.xl),
-            ],
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            r.userName,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          Text(
+                            Formatters.relative(r.createdAt),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    RatingStars(r.rating, size: 14),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(r.comment, style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
           ),
         );
       },
@@ -452,23 +620,43 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Expanded(
-              child: AppButton.outline(
-                saved ? 'Saved' : 'Save',
-                icon: saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                onPressed: onSave,
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(top: BorderSide(color: scheme.outline)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 16,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Expanded(
+                child: AppButton.outline(
+                  saved ? 'Saved' : 'Save',
+                  icon: saved
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  onPressed: onSave,
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: AppButton('Add to trip', icon: Icons.add_location_alt_outlined, onPressed: onAddToTrip),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: AppButton(
+                  'Add to trip',
+                  icon: Icons.add_location_alt_outlined,
+                  onPressed: onAddToTrip,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

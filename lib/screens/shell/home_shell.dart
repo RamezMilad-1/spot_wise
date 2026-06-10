@@ -1,9 +1,12 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/utils/auth_gate.dart';
 import '../../models/notification_item.dart';
 import '../../providers/auth_provider.dart';
@@ -71,47 +74,144 @@ class _HomeShellState extends State<HomeShell> {
     return ChangeNotifierProvider.value(
       value: _tab,
       child: StreamProvider<List<NotificationItem>>(
-        create: (_) =>
-            uid == null ? Stream.value(const <NotificationItem>[]) : watchNotifications(uid),
+        create: (_) => uid == null
+            ? Stream.value(const <NotificationItem>[])
+            : watchNotifications(uid),
         initialData: const [],
         child: Consumer<HomeTab>(
           builder: (context, tab, _) => Scaffold(
             key: shellScaffoldKey,
             drawer: const AppDrawer(),
+            extendBody: true,
             body: IndexedStack(index: tab.index, children: _screens),
-            floatingActionButton: FloatingActionButton(
-              onPressed: _addSpot,
-              tooltip: 'Add a spot',
-              elevation: 6,
-              backgroundColor: AppColors.teal,
-              shape: const CircleBorder(),
-              child: Ink(
-                decoration: const BoxDecoration(
-                  gradient: AppColors.lagoonGradient,
-                  shape: BoxShape.circle,
-                ),
+            bottomNavigationBar: MediaQuery.viewInsetsOf(context).bottom > 0
+                ? null
+                : _FloatingDock(tab: tab, onAddSpot: _addSpot),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Frosted-glass pill dock floating above the bottom edge — the shell's
+/// bottom navigation. Same four destinations + the center "Add a spot"
+/// action; only the presentation changed.
+class _FloatingDock extends StatelessWidget {
+  final HomeTab tab;
+  final VoidCallback onAddSpot;
+
+  const _FloatingDock({required this.tab, required this.onAddSpot});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = isDark
+        ? AppColors.darkSurface.withValues(alpha: 0.72)
+        : Colors.white.withValues(alpha: 0.80);
+
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppSpacing.dockMaxWidth),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.dock),
+              boxShadow: AppColors.softShadow,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.dock),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                 child: Container(
-                  width: 56,
-                  height: 56,
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
+                  height: AppSpacing.dockHeight,
+                  decoration: BoxDecoration(
+                    color: fill,
+                    borderRadius: BorderRadius.circular(AppRadius.dock),
+                    border: Border.all(
+                      color: scheme.outline.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      _NavItem(
+                        tab: tab,
+                        index: 0,
+                        icon: Icons.home_outlined,
+                        selectedIcon: Icons.home_rounded,
+                        label: 'Home',
+                      ),
+                      _NavItem(
+                        tab: tab,
+                        index: 1,
+                        icon: Icons.map_outlined,
+                        selectedIcon: Icons.map_rounded,
+                        label: 'Map',
+                      ),
+                      _DockAddButton(onTap: onAddSpot),
+                      _NavItem(
+                        tab: tab,
+                        index: 2,
+                        icon: Icons.auto_awesome_outlined,
+                        selectedIcon: Icons.auto_awesome_rounded,
+                        label: 'Plan',
+                      ),
+                      _NavItem(
+                        tab: tab,
+                        index: 3,
+                        icon: Icons.luggage_outlined,
+                        selectedIcon: Icons.luggage_rounded,
+                        label: 'Trips',
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-            bottomNavigationBar: BottomAppBar(
-              height: 64,
-              padding: EdgeInsets.zero,
-              shape: const CircularNotchedRectangle(),
-              notchMargin: 8,
-              child: Row(
-                children: [
-                  _NavItem(tab: tab, index: 0, icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
-                  _NavItem(tab: tab, index: 1, icon: Icons.map_outlined, selectedIcon: Icons.map_rounded, label: 'Map'),
-                  const SizedBox(width: 56),
-                  _NavItem(tab: tab, index: 2, icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome_rounded, label: 'Plan'),
-                  _NavItem(tab: tab, index: 3, icon: Icons.luggage_outlined, selectedIcon: Icons.luggage_rounded, label: 'Trips'),
-                ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Center "Add a spot" button — an ink circle inside the dock pill.
+class _DockAddButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _DockAddButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      width: 64,
+      child: Center(
+        child: Tooltip(
+          message: 'Add a spot',
+          child: Material(
+            color: isDark ? AppColors.darkInk : AppColors.ink,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: SizedBox(
+                width: 52,
+                height: 52,
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 26,
+                  color: isDark ? AppColors.darkBg : Colors.white,
+                ),
               ),
             ),
           ),
@@ -139,7 +239,8 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = tab.index == index;
-    final color = selected ? AppColors.teal : Theme.of(context).colorScheme.onSurfaceVariant;
+    final scheme = Theme.of(context).colorScheme;
+    final color = selected ? scheme.onSurface : scheme.onSurfaceVariant;
     return Expanded(
       child: InkWell(
         onTap: () => tab.go(index),
@@ -150,6 +251,8 @@ class _NavItem extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 11,
                 color: color,

@@ -22,18 +22,24 @@ class OfflineBanner extends StatelessWidget {
               width: double.infinity,
               color: AppColors.warning.withValues(alpha: 0.16),
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.wifi_off_rounded, size: 16, color: AppColors.warning),
+                  const Icon(
+                    Icons.wifi_off_rounded,
+                    size: 16,
+                    color: AppColors.warning,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     'You\'re offline — showing saved data',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.warning,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),

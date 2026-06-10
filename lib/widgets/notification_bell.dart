@@ -20,7 +20,8 @@ class NotificationBell extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.notifications_none_rounded),
           tooltip: 'Notifications',
-          onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
+          onPressed: () =>
+              Navigator.pushNamed(context, AppRoutes.notifications),
         ),
         if (unread > 0)
           Positioned(
@@ -32,12 +33,19 @@ class NotificationBell extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.coral,
                 shape: BoxShape.circle,
-                border: Border.all(color: Theme.of(context).colorScheme.surface, width: 1.5),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 1.5,
+                ),
               ),
               child: Text(
                 unread > 9 ? '9+' : '$unread',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),

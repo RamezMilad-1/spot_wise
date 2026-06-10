@@ -27,15 +27,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _index = 0;
 
   static const _pages = [
-    _Page(Icons.explore_rounded, 'Discover places worth the detour',
-        'Explore admin-approved local spots and hidden gems on a beautiful, map-first experience.',
-        [AppColors.teal, AppColors.tealLight]),
-    _Page(Icons.bookmark_added_rounded, 'Save favourites, plan trips',
-        'Bookmark spots, build day-by-day trips and get reminders — all in one place.',
-        [AppColors.coral, AppColors.amber]),
-    _Page(Icons.auto_awesome_rounded, 'Let AI plan your days',
-        'Tell us your dates, interests and budget — get a tailored day-by-day itinerary in seconds.',
-        [Color(0xFF6C5CE7), AppColors.teal]),
+    _Page(
+      Icons.explore_rounded,
+      'Discover places worth the detour',
+      'Explore admin-approved local spots and hidden gems on a beautiful, map-first experience.',
+      [AppColors.teal, AppColors.tealLight],
+    ),
+    _Page(
+      Icons.bookmark_added_rounded,
+      'Save favourites, plan trips',
+      'Bookmark spots, build day-by-day trips and get reminders — all in one place.',
+      [AppColors.coral, AppColors.amber],
+    ),
+    _Page(
+      Icons.auto_awesome_rounded,
+      'Let AI plan your days',
+      'Tell us your dates, interests and budget — get a tailored day-by-day itinerary in seconds.',
+      [Color(0xFF6C5CE7), AppColors.teal],
+    ),
   ];
 
   Future<void> _finish() async {
@@ -83,7 +92,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     width: i == _index ? 22 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: i == _index ? AppColors.teal : AppColors.teal.withValues(alpha: 0.25),
+                      color: i == _index
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context).colorScheme.outline,
                       borderRadius: AppRadius.brSm,
                     ),
                   ),
@@ -128,21 +139,11 @@ class _PageView extends StatelessWidget {
             width: 180,
             height: 180,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: page.colors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: page.colors.first.withValues(alpha: 0.35),
-                  blurRadius: 30,
-                  offset: const Offset(0, 12),
-                ),
-              ],
+              boxShadow: AppColors.softShadow,
             ),
-            child: Icon(page.icon, size: 80, color: Colors.white),
+            child: Icon(page.icon, size: 76, color: page.colors.first),
           ),
           const SizedBox(height: AppSpacing.xxl),
           Text(
@@ -154,8 +155,8 @@ class _PageView extends StatelessWidget {
           Text(
             page.body,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

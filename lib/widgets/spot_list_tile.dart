@@ -32,28 +32,44 @@ class SpotListTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Row(
           children: [
-            NetworkPhoto(spot.coverPhoto, width: 64, height: 64, radius: AppRadius.brMd),
+            NetworkPhoto(
+              spot.coverPhoto,
+              width: 64,
+              height: 64,
+              radius: AppRadius.brLg,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(spot.name,
-                      style: text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    spot.name,
+                    style: text.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 3),
                   Text(
-                    subtitleOverride ?? '${Categories.labelFor(spot.categoryId)} · ${spot.location}',
+                    subtitleOverride ??
+                        '${Categories.labelFor(spot.categoryId)} · ${spot.location}',
                     style: text.bodySmall,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 5),
-                  RatingStars(spot.rating, size: 13, showValue: true, count: spot.reviewCount),
+                  RatingStars(
+                    spot.rating,
+                    size: 13,
+                    showValue: true,
+                    count: spot.reviewCount,
+                  ),
                 ],
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            trailing ?? Icon(Icons.chevron_right_rounded, color: text.bodySmall?.color),
+            trailing ??
+                Icon(Icons.chevron_right_rounded, color: text.bodySmall?.color),
           ],
         ),
       ),

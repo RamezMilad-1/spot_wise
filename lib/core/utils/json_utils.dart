@@ -31,17 +31,27 @@ class JsonUtils {
   }
 
   static List<String> asStringList(dynamic v) {
-    if (v is List) return v.where((e) => e != null).map((e) => e.toString()).toList();
-    if (v is Map) return v.values.where((e) => e != null).map((e) => e.toString()).toList();
+    if (v is List) {
+      return v.where((e) => e != null).map((e) => e.toString()).toList();
+    }
+    if (v is Map) {
+      return v.values.where((e) => e != null).map((e) => e.toString()).toList();
+    }
     return <String>[];
   }
 
   static List<Map<String, dynamic>> asMapList(dynamic v) {
     if (v is List) {
-      return v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      return v
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
     if (v is Map) {
-      return v.values.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      return v.values
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     }
     return <Map<String, dynamic>>[];
   }

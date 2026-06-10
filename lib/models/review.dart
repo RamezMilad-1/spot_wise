@@ -39,13 +39,13 @@ class Review {
   }
 
   Map<String, dynamic> toJson() => {
-        'spotId': spotId,
-        'userId': userId,
-        'userName': userName,
-        'userPhoto': userPhoto,
-        'rating': rating,
-        'comment': comment,
-        'photos': photos,
-        'createdAt': createdAt.millisecondsSinceEpoch,
-      };
+    'spotId': spotId,
+    'userId': userId,
+    'userName': userName,
+    'userPhoto': userPhoto,
+    'rating': rating,
+    'comment': comment,
+    'photos': photos,
+    'createdAt': createdAt.millisecondsSinceEpoch,
+  };
 }

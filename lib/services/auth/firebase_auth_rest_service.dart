@@ -23,7 +23,7 @@ class FirebaseAuthRestService implements AuthService {
   final BackendService backend;
   final http.Client _client;
   FirebaseAuthRestService(this.backend, {http.Client? client})
-      : _client = client ?? http.Client();
+    : _client = client ?? http.Client();
 
   AppUser? _current;
 
@@ -50,7 +50,10 @@ class FirebaseAuthRestService implements AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> _call(String method, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> _call(
+    String method,
+    Map<String, dynamic> body,
+  ) async {
     final res = await _client.post(
       Uri.parse('$_base:$method?key=$_key'),
       headers: {'Content-Type': 'application/json'},
@@ -67,7 +70,8 @@ class FirebaseAuthRestService implements AuthService {
     final code = (error['error']?['message'] ?? '').toString();
     return switch (code) {
       'EMAIL_EXISTS' => 'An account already exists for that email.',
-      'INVALID_PASSWORD' || 'INVALID_LOGIN_CREDENTIALS' => 'Incorrect email or password.',
+      'INVALID_PASSWORD' ||
+      'INVALID_LOGIN_CREDENTIALS' => 'Incorrect email or password.',
       'EMAIL_NOT_FOUND' => 'No account found for that email.',
       'WEAK_PASSWORD : Password should be at least 6 characters' =>
         'Use a stronger password (at least 6 characters).',

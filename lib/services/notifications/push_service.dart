@@ -35,7 +35,9 @@ class PushService {
     try {
       await Firebase.initializeApp();
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    } catch (_) {/* never block startup */}
+    } catch (_) {
+      /* never block startup */
+    }
   }
 
   /// Permission, foreground + tap listeners, and the broadcast topic. Call once
@@ -67,7 +69,9 @@ class PushService {
 
       // Lets admins broadcast from the Firebase console (target topic `all`).
       await messaging.subscribeToTopic('all');
-    } catch (_) {/* best effort */}
+    } catch (_) {
+      /* best effort */
+    }
   }
 
   /// Mirrors an incoming push into the signed-in user's in-app notification
@@ -80,16 +84,20 @@ class PushService {
       final n = m.notification;
       final title = n?.title ?? m.data['title']?.toString() ?? 'SpotWise';
       final body = n?.body ?? m.data['body']?.toString() ?? '';
-      await services.backend.addNotification(NotificationItem(
-        id: '',
-        userId: user.id,
-        title: title,
-        body: body,
-        type: NotificationType.system,
-        spotId: m.data['spotId']?.toString(),
-        createdAt: DateTime.now(),
-      ));
-    } catch (_) {/* best effort */}
+      await services.backend.addNotification(
+        NotificationItem(
+          id: '',
+          userId: user.id,
+          title: title,
+          body: body,
+          type: NotificationType.system,
+          spotId: m.data['spotId']?.toString(),
+          createdAt: DateTime.now(),
+        ),
+      );
+    } catch (_) {
+      /* best effort */
+    }
   }
 
   /// The device's current FCM token, or null when unsupported/unavailable.

@@ -68,14 +68,16 @@ class SpotDetailsProvider extends ChangeNotifier {
 
   Future<void> report(String reason) async {
     final user = services.auth.currentUser;
-    await services.backend.addReport(Report(
-      id: '',
-      spotId: _spot.id,
-      spotName: _spot.name,
-      userId: user?.id ?? '',
-      userName: user?.name ?? 'Anonymous',
-      reason: reason,
-      createdAt: DateTime.now(),
-    ));
+    await services.backend.addReport(
+      Report(
+        id: '',
+        spotId: _spot.id,
+        spotName: _spot.name,
+        userId: user?.id ?? '',
+        userName: user?.name ?? 'Anonymous',
+        reason: reason,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 }

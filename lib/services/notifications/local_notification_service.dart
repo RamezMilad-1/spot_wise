@@ -8,7 +8,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 /// FCM push (cross-device) is the deferred step documented in the Integrations
 /// screen; in-app delivery still works via the notification center.
 class LocalNotificationService {
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
   Future<void> init() async {
@@ -24,13 +25,16 @@ class LocalNotificationService {
       // app is backgrounded/terminated) land on the high-importance channel.
       await _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(const AndroidNotificationChannel(
-            'spotwise_default',
-            'SpotWise',
-            description: 'SpotWise updates and reminders',
-            importance: Importance.high,
-          ));
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(
+            const AndroidNotificationChannel(
+              'spotwise_default',
+              'SpotWise',
+              description: 'SpotWise updates and reminders',
+              importance: Importance.high,
+            ),
+          );
       _ready = true;
     } catch (_) {
       _ready = false;
@@ -43,13 +47,17 @@ class LocalNotificationService {
     try {
       await _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.requestNotificationsPermission();
       await _plugin
           .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
+            IOSFlutterLocalNotificationsPlugin
+          >()
           ?.requestPermissions(alert: true, badge: true, sound: true);
-    } catch (_) {/* best effort */}
+    } catch (_) {
+      /* best effort */
+    }
   }
 
   Future<void> show(String title, String body) async {
@@ -72,6 +80,8 @@ class LocalNotificationService {
         body,
         details,
       );
-    } catch (_) {/* best effort */}
+    } catch (_) {
+      /* best effort */
+    }
   }
 }

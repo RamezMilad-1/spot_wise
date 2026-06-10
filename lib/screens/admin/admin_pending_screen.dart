@@ -17,7 +17,9 @@ class AdminPendingScreen extends StatelessWidget {
 
   Future<void> _approve(BuildContext context, Spot spot) async {
     await context.read<AdminProvider>().approve(spot);
-    if (context.mounted) AppSnackbar.success(context, '“${spot.name}” approved and published.');
+    if (context.mounted) {
+      AppSnackbar.success(context, '“${spot.name}” approved and published.');
+    }
   }
 
   Future<void> _reject(BuildContext context, Spot spot) async {
@@ -29,10 +31,15 @@ class AdminPendingScreen extends StatelessWidget {
         content: TextField(
           controller: controller,
           maxLines: 3,
-          decoration: const InputDecoration(hintText: 'Reason (sent to the contributor)'),
+          decoration: const InputDecoration(
+            hintText: 'Reason (sent to the contributor)',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
             child: const Text('Reject'),
@@ -42,7 +49,9 @@ class AdminPendingScreen extends StatelessWidget {
     );
     if (reason != null && reason.isNotEmpty && context.mounted) {
       await context.read<AdminProvider>().reject(spot, reason);
-      if (context.mounted) AppSnackbar.show(context, '“${spot.name}” rejected.');
+      if (context.mounted) {
+        AppSnackbar.show(context, '“${spot.name}” rejected.');
+      }
     }
   }
 
@@ -74,26 +83,27 @@ class AdminPendingScreen extends StatelessWidget {
       body: adminP.loading && adminP.pending.isEmpty
           ? const LoadingView()
           : adminP.pending.isEmpty
-              ? const EmptyView(
-                  icon: Icons.verified_rounded,
-                  title: 'All clear',
-                  message: 'No spots are awaiting review right now.',
-                )
-              : RefreshIndicator(
-                  onRefresh: () => adminP.load(),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    itemCount: adminP.pending.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
-                    itemBuilder: (_, i) => _PendingCard(
-                      spot: adminP.pending[i],
-                      onApprove: () => _approve(context, adminP.pending[i]),
-                      onReject: () => _reject(context, adminP.pending[i]),
-                      onEdit: () => _edit(context, adminP.pending[i]),
-                      onDelete: () => _delete(context, adminP.pending[i]),
-                    ),
-                  ),
+          ? const EmptyView(
+              icon: Icons.verified_rounded,
+              title: 'All clear',
+              message: 'No spots are awaiting review right now.',
+            )
+          : RefreshIndicator(
+              onRefresh: () => adminP.load(),
+              child: ListView.separated(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                itemCount: adminP.pending.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppSpacing.lg),
+                itemBuilder: (_, i) => _PendingCard(
+                  spot: adminP.pending[i],
+                  onApprove: () => _approve(context, adminP.pending[i]),
+                  onReject: () => _reject(context, adminP.pending[i]),
+                  onEdit: () => _edit(context, adminP.pending[i]),
+                  onDelete: () => _delete(context, adminP.pending[i]),
                 ),
+              ),
+            ),
     );
   }
 }
@@ -133,18 +143,34 @@ class _PendingCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text('${spot.location} · by ${spot.submittedByName}', style: text.bodySmall),
+                Text(
+                  '${spot.location} · by ${spot.submittedByName}',
+                  style: text.bodySmall,
+                ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(spot.description, style: text.bodyMedium, maxLines: 3, overflow: TextOverflow.ellipsis),
+                Text(
+                  spot.description,
+                  style: text.bodyMedium,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
                     Expanded(
-                      child: AppButton('Approve', icon: Icons.check_rounded, onPressed: onApprove),
+                      child: AppButton(
+                        'Approve',
+                        icon: Icons.check_rounded,
+                        onPressed: onApprove,
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: AppButton.outline('Reject', icon: Icons.close_rounded, onPressed: onReject),
+                      child: AppButton.outline(
+                        'Reject',
+                        icon: Icons.close_rounded,
+                        onPressed: onReject,
+                      ),
                     ),
                   ],
                 ),
@@ -157,14 +183,19 @@ class _PendingCard extends StatelessWidget {
                       label: const Text('Edit'),
                     ),
                     TextButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.spotDetails,
+                        arguments: spot,
+                      ),
                       child: const Text('View'),
                     ),
                     const Spacer(),
                     TextButton.icon(
                       onPressed: onDelete,
-                      style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.danger,
+                      ),
                       icon: const Icon(Icons.delete_outline_rounded, size: 18),
                       label: const Text('Delete'),
                     ),

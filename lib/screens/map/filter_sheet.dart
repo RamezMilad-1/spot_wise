@@ -37,9 +37,16 @@ class _FilterSheetState extends State<FilterSheet> {
 
     return SafeArea(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,13 +73,23 @@ class _FilterSheetState extends State<FilterSheet> {
                         children: [
                           for (final c in categories)
                             FilterChip(
-                              avatar: Icon(c.icon, size: 18,
-                                  color: _f.categoryIds.contains(c.id) ? Colors.white : c.color),
+                              avatar: Icon(
+                                c.icon,
+                                size: 18,
+                                color: _f.categoryIds.contains(c.id)
+                                    ? (Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? AppColors.darkBg
+                                          : Colors.white)
+                                    : c.color,
+                              ),
                               label: Text(c.label),
                               selected: _f.categoryIds.contains(c.id),
                               onSelected: (_) => setState(() {
                                 final ids = {..._f.categoryIds};
-                                ids.contains(c.id) ? ids.remove(c.id) : ids.add(c.id);
+                                ids.contains(c.id)
+                                    ? ids.remove(c.id)
+                                    : ids.add(c.id);
                                 _f = _f.copyWith(categoryIds: ids);
                               }),
                             ),
@@ -85,24 +102,31 @@ class _FilterSheetState extends State<FilterSheet> {
                             IconButton(
                               visualDensity: VisualDensity.compact,
                               tooltip: '$i star${i > 1 ? 's' : ''} & up',
-                              onPressed: () =>
-                                  setState(() => _f = _f.copyWith(minRating: i.toDouble())),
+                              onPressed: () => setState(
+                                () => _f = _f.copyWith(minRating: i.toDouble()),
+                              ),
                               icon: Icon(
-                                i <= _f.minRating ? Icons.star_rounded : Icons.star_border_rounded,
+                                i <= _f.minRating
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
                                 color: AppColors.amber,
                               ),
                             ),
                           const Spacer(),
                           if (_f.minRating > 0)
                             TextButton(
-                              onPressed: () => setState(() => _f = _f.copyWith(minRating: 0)),
+                              onPressed: () => setState(
+                                () => _f = _f.copyWith(minRating: 0),
+                              ),
                               child: const Text('Any'),
                             ),
                         ],
                       ),
                       if (_f.minRating > 0)
-                        Text('${_f.minRating.toStringAsFixed(0)}★ & up',
-                            style: Theme.of(context).textTheme.bodySmall),
+                        Text(
+                          '${_f.minRating.toStringAsFixed(0)}★ & up',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       _label('Price'),
                       Wrap(
                         spacing: AppSpacing.sm,
@@ -120,20 +144,32 @@ class _FilterSheetState extends State<FilterSheet> {
                         ],
                       ),
                       _label('Good for'),
-                      _switch('Family-friendly', _f.familyOnly,
-                          (v) => setState(() => _f = _f.copyWith(familyOnly: v))),
-                      _switch('Free entry', _f.freeOnly,
-                          (v) => setState(() => _f = _f.copyWith(freeOnly: v))),
-                      _switch('Hidden gems', _f.hiddenGemOnly,
-                          (v) => setState(() => _f = _f.copyWith(hiddenGemOnly: v))),
+                      _switch(
+                        'Family-friendly',
+                        _f.familyOnly,
+                        (v) => setState(() => _f = _f.copyWith(familyOnly: v)),
+                      ),
+                      _switch(
+                        'Free entry',
+                        _f.freeOnly,
+                        (v) => setState(() => _f = _f.copyWith(freeOnly: v)),
+                      ),
+                      _switch(
+                        'Hidden gems',
+                        _f.hiddenGemOnly,
+                        (v) =>
+                            setState(() => _f = _f.copyWith(hiddenGemOnly: v)),
+                      ),
                       if (widget.hasLocation) ...[
                         _label('Distance'),
                         _switch(
                           'Limit by distance',
                           _f.maxDistanceKm != null,
-                          (v) => setState(() => _f = v
-                              ? _f.copyWith(maxDistanceKm: 10)
-                              : _f.copyWith(clearDistance: true)),
+                          (v) => setState(
+                            () => _f = v
+                                ? _f.copyWith(maxDistanceKm: 10)
+                                : _f.copyWith(clearDistance: true),
+                          ),
                         ),
                         if (_f.maxDistanceKm != null)
                           Row(
@@ -145,14 +181,17 @@ class _FilterSheetState extends State<FilterSheet> {
                                   max: 50,
                                   divisions: 49,
                                   label: '${_f.maxDistanceKm!.round()} km',
-                                  onChanged: (v) =>
-                                      setState(() => _f = _f.copyWith(maxDistanceKm: v)),
+                                  onChanged: (v) => setState(
+                                    () => _f = _f.copyWith(maxDistanceKm: v),
+                                  ),
                                 ),
                               ),
                               SizedBox(
                                 width: 56,
-                                child: Text('${_f.maxDistanceKm!.round()} km',
-                                    style: text.labelLarge),
+                                child: Text(
+                                  '${_f.maxDistanceKm!.round()} km',
+                                  style: text.labelLarge,
+                                ),
                               ),
                             ],
                           ),
@@ -178,11 +217,12 @@ class _FilterSheetState extends State<FilterSheet> {
   }
 
   Widget _label(String text) => Padding(
-        padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
-        child: Text(text, style: Theme.of(context).textTheme.titleSmall),
-      );
+    padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
+    child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+  );
 
-  Widget _switch(String label, bool value, ValueChanged<bool> onChanged) => SwitchListTile(
+  Widget _switch(String label, bool value, ValueChanged<bool> onChanged) =>
+      SwitchListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
         value: value,

@@ -73,7 +73,11 @@ class ClusterMarker extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         '$count',
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          fontSize: 14,
+        ),
       ),
     );
   }

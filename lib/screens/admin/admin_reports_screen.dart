@@ -30,28 +30,31 @@ class AdminReportsScreen extends StatelessWidget {
       body: adminP.loading && adminP.reports.isEmpty
           ? const LoadingView()
           : adminP.reports.isEmpty
-              ? const EmptyView(
-                  icon: Icons.flag_outlined,
-                  title: 'No reports',
-                  message: 'Reported spots will appear here for review.',
-                )
-              : RefreshIndicator(
-                  onRefresh: () => adminP.load(),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    itemCount: adminP.reports.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
-                    itemBuilder: (_, i) {
-                      final r = adminP.reports[i];
-                      return _ReportCard(
-                        report: r,
-                        onView: () => _viewSpot(context, r),
-                        onDismiss: () => adminP.resolveReport(r, ReportStatus.dismissed),
-                        onAction: () => adminP.resolveReport(r, ReportStatus.reviewed),
-                      );
-                    },
-                  ),
-                ),
+          ? const EmptyView(
+              icon: Icons.flag_outlined,
+              title: 'No reports',
+              message: 'Reported spots will appear here for review.',
+            )
+          : RefreshIndicator(
+              onRefresh: () => adminP.load(),
+              child: ListView.separated(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                itemCount: adminP.reports.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppSpacing.md),
+                itemBuilder: (_, i) {
+                  final r = adminP.reports[i];
+                  return _ReportCard(
+                    report: r,
+                    onView: () => _viewSpot(context, r),
+                    onDismiss: () =>
+                        adminP.resolveReport(r, ReportStatus.dismissed),
+                    onAction: () =>
+                        adminP.resolveReport(r, ReportStatus.reviewed),
+                  );
+                },
+              ),
+            ),
     );
   }
 }
@@ -70,10 +73,10 @@ class _ReportCard extends StatelessWidget {
   });
 
   Color get _statusColor => switch (report.status) {
-        ReportStatus.open => AppColors.warning,
-        ReportStatus.reviewed => AppColors.success,
-        ReportStatus.dismissed => AppColors.inkFaint,
-      };
+    ReportStatus.open => AppColors.warning,
+    ReportStatus.reviewed => AppColors.success,
+    ReportStatus.dismissed => AppColors.inkFaint,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -87,32 +90,56 @@ class _ReportCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.flag_rounded, color: AppColors.danger, size: 20),
+                const Icon(
+                  Icons.flag_rounded,
+                  color: AppColors.danger,
+                  size: 20,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(child: Text(report.spotName, style: text.titleSmall)),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _statusColor.withValues(alpha: 0.16),
-                    borderRadius: AppRadius.brSm,
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(AppRadius.pill),
+                    ),
                   ),
-                  child: Text(report.status.label,
-                      style: TextStyle(color: _statusColor, fontWeight: FontWeight.w700, fontSize: 12)),
+                  child: Text(
+                    report.status.label,
+                    style: TextStyle(
+                      color: _statusColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(report.reason, style: text.bodyMedium),
             const SizedBox(height: 4),
-            Text('By ${report.userName} · ${Formatters.relative(report.createdAt)}', style: text.bodySmall),
+            Text(
+              'By ${report.userName} · ${Formatters.relative(report.createdAt)}',
+              style: text.bodySmall,
+            ),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
                 TextButton(onPressed: onView, child: const Text('View spot')),
                 const Spacer(),
                 if (isOpen) ...[
-                  TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
-                  FilledButton(onPressed: onAction, child: const Text('Mark actioned')),
+                  TextButton(
+                    onPressed: onDismiss,
+                    child: const Text('Dismiss'),
+                  ),
+                  FilledButton(
+                    onPressed: onAction,
+                    child: const Text('Mark actioned'),
+                  ),
                 ],
               ],
             ),

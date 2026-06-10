@@ -15,7 +15,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 900),
@@ -47,9 +48,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ink = isDark ? AppColors.darkInk : AppColors.ink;
+    final inkSoft = isDark ? AppColors.darkInkSoft : AppColors.inkSoft;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.lagoonGradient),
+        color: isDark ? AppColors.darkBg : AppColors.cream,
         child: Center(
           child: FadeTransition(
             opacity: _controller,
@@ -62,10 +66,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 children: [
                   const AppLogo(size: 72, showWordmark: false),
                   const SizedBox(height: 22),
-                  const Text(
+                  Text(
                     AppConfig.appName,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: ink,
                       fontSize: 34,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
@@ -74,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   const SizedBox(height: 8),
                   Text(
                     AppConfig.tagline,
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
+                    style: TextStyle(color: inkSoft, fontSize: 14),
                   ),
                 ],
               ),

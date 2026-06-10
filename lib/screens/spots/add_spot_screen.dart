@@ -177,7 +177,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         );
         await spotsP.submitSpot(spot);
         if (!mounted) return;
-        AppSnackbar.success(context, 'Submitted! An admin will review it shortly.');
+        AppSnackbar.success(
+          context,
+          'Submitted! An admin will review it shortly.',
+        );
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -190,7 +193,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   @override
   Widget build(BuildContext context) {
     final categories = context.watch<CategoryStore>().enabled;
-    if (_categoryId.isEmpty && categories.isNotEmpty) _categoryId = categories.first.id;
+    if (_categoryId.isEmpty && categories.isNotEmpty) {
+      _categoryId = categories.first.id;
+    }
     final text = Theme.of(context).textTheme;
     final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
 
@@ -205,16 +210,22 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.tealMist.withValues(alpha: 0.4),
-                  borderRadius: AppRadius.brMd,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: AppRadius.brLg,
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.verified_user_outlined, color: AppColors.tealDark, size: 20),
+                    Icon(
+                      Icons.verified_user_outlined,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      size: 20,
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: Text('Every submission is reviewed by an admin before it goes public.',
-                          style: text.bodySmall?.copyWith(color: AppColors.tealDark)),
+                      child: Text(
+                        'Every submission is reviewed by an admin before it goes public.',
+                        style: text.bodySmall,
+                      ),
                     ),
                   ],
                 ),
@@ -223,7 +234,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
             ],
             Text('Photos', style: text.labelLarge),
             const SizedBox(height: AppSpacing.sm),
-            PhotoPickerRow(photos: _photos, onChanged: (p) => setState(() => _photos = p)),
+            PhotoPickerRow(
+              photos: _photos,
+              onChanged: (p) => setState(() => _photos = p),
+            ),
             const SizedBox(height: AppSpacing.lg),
             AppTextField(
               controller: _name,
@@ -247,11 +261,13 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                 for (final c in categories)
                   DropdownMenuItem(
                     value: c.id,
-                    child: Row(children: [
-                      Icon(c.icon, size: 18, color: c.color),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(c.label),
-                    ]),
+                    child: Row(
+                      children: [
+                        Icon(c.icon, size: 18, color: c.color),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(c.label),
+                      ],
+                    ),
                   ),
               ],
               onChanged: (v) => setState(() => _categoryId = v ?? _categoryId),
@@ -289,7 +305,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               decoration: const InputDecoration(labelText: 'Price range'),
               items: [
                 for (final p in PriceRange.values)
-                  DropdownMenuItem(value: p, child: Text('${p.label} (${p.symbol})')),
+                  DropdownMenuItem(
+                    value: p,
+                    child: Text('${p.label} (${p.symbol})'),
+                  ),
               ],
               onChanged: (v) => setState(() => _price = v ?? _price),
             ),
@@ -326,7 +345,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
             ),
             if (_isEdit && isAdmin) ...[
               const Divider(height: AppSpacing.xl),
-              Text('Admin', style: text.labelLarge?.copyWith(color: AppColors.teal)),
+              Text(
+                'Admin',
+                style: text.labelLarge?.copyWith(color: AppColors.teal),
+              ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<SpotStatus>(
                 initialValue: _status,
@@ -384,13 +406,15 @@ class _LocationCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        borderRadius: AppRadius.brMd,
-        border: Border.all(color: scheme.outline),
+        borderRadius: AppRadius.brLg,
+        color: scheme.surfaceContainerHighest,
       ),
       child: Row(
         children: [
-          Icon(has ? Icons.location_on_rounded : Icons.location_off_outlined,
-              color: has ? AppColors.success : scheme.onSurfaceVariant),
+          Icon(
+            has ? Icons.location_on_rounded : Icons.location_off_outlined,
+            color: has ? AppColors.success : scheme.onSurfaceVariant,
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -409,7 +433,11 @@ class _LocationCard extends StatelessWidget {
           TextButton.icon(
             onPressed: capturing ? null : onCapture,
             icon: capturing
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.my_location_rounded, size: 18),
             label: Text(has ? 'Update' : 'Capture'),
           ),

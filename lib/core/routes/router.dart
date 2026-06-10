@@ -67,9 +67,9 @@ class AppRouter {
       AppRoutes.integrations => const IntegrationsScreen(),
       AppRoutes.chat => const ChatPlaceholderScreen(),
       _ => Scaffold(
-          appBar: AppBar(),
-          body: Center(child: Text('Route not found: ${settings.name}')),
-        ),
+        appBar: AppBar(),
+        body: Center(child: Text('Route not found: ${settings.name}')),
+      ),
     };
     return MaterialPageRoute(builder: (_) => page, settings: settings);
   }

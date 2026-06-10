@@ -37,23 +37,23 @@ class Report {
   }
 
   Map<String, dynamic> toJson() => {
-        'spotId': spotId,
-        'spotName': spotName,
-        'userId': userId,
-        'userName': userName,
-        'reason': reason,
-        'status': status.value,
-        'createdAt': createdAt.millisecondsSinceEpoch,
-      };
+    'spotId': spotId,
+    'spotName': spotName,
+    'userId': userId,
+    'userName': userName,
+    'reason': reason,
+    'status': status.value,
+    'createdAt': createdAt.millisecondsSinceEpoch,
+  };
 
   Report copyWith({ReportStatus? status}) => Report(
-        id: id,
-        spotId: spotId,
-        spotName: spotName,
-        userId: userId,
-        userName: userName,
-        reason: reason,
-        status: status ?? this.status,
-        createdAt: createdAt,
-      );
+    id: id,
+    spotId: spotId,
+    spotName: spotName,
+    userId: userId,
+    userName: userName,
+    reason: reason,
+    status: status ?? this.status,
+    createdAt: createdAt,
+  );
 }

@@ -35,7 +35,11 @@ class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
     if (!mounted) return;
     final created = tripsP.byId(id) ?? widget.trip;
     AppSnackbar.success(context, 'Saved to your trips');
-    Navigator.pushReplacementNamed(context, AppRoutes.tripDetails, arguments: created);
+    Navigator.pushReplacementNamed(
+      context,
+      AppRoutes.tripDetails,
+      arguments: created,
+    );
   }
 
   @override
@@ -56,9 +60,14 @@ class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.auto_awesome_rounded, color: AppColors.teal),
+                    const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: AppColors.teal,
+                    ),
                     const SizedBox(width: AppSpacing.sm),
-                    Expanded(child: Text(trip.destination, style: text.displaySmall)),
+                    Expanded(
+                      child: Text(trip.destination, style: text.displaySmall),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -98,15 +107,17 @@ class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
                         urlTemplate: AppConfig.osmTileUrl,
                         userAgentPackageName: AppConfig.osmUserAgent,
                       ),
-                      MarkerLayer(markers: [
-                        for (final s in stops)
-                          Marker(
-                            point: LatLng(s.lat, s.lng),
-                            width: 40,
-                            height: 40,
-                            child: SpotMarker(categoryId: s.categoryId),
-                          ),
-                      ]),
+                      MarkerLayer(
+                        markers: [
+                          for (final s in stops)
+                            Marker(
+                              point: LatLng(s.lat, s.lng),
+                              width: 40,
+                              height: 40,
+                              child: SpotMarker(categoryId: s.categoryId),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -122,11 +133,19 @@ class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
           child: Row(
             children: [
               Expanded(
-                child: AppButton.outline('Tweak brief', onPressed: () => Navigator.pop(context)),
+                child: AppButton.outline(
+                  'Tweak brief',
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: AppButton('Save trip', icon: Icons.bookmark_added_rounded, loading: _saving, onPressed: _save),
+                child: AppButton(
+                  'Save trip',
+                  icon: Icons.bookmark_added_rounded,
+                  loading: _saving,
+                  onPressed: _save,
+                ),
               ),
             ],
           ),
@@ -144,7 +163,12 @@ class _DayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -155,14 +179,23 @@ class _DayCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundColor: AppColors.tealMist,
-                    child: Text('${day.dayNumber}',
-                        style: const TextStyle(color: AppColors.tealDark, fontWeight: FontWeight.w800)),
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    child: Text(
+                      '${day.dayNumber}',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: Text(day.title.isEmpty ? 'Day ${day.dayNumber}' : day.title,
-                        style: text.titleMedium),
+                    child: Text(
+                      day.title.isEmpty ? 'Day ${day.dayNumber}' : day.title,
+                      style: text.titleMedium,
+                    ),
                   ),
                 ],
               ),
@@ -210,13 +243,22 @@ class _StopRow extends StatelessWidget {
           children: [
             Column(
               children: [
-                Icon(stop.dayPart.icon, size: 18, color: AppColors.teal),
+                Icon(
+                  stop.dayPart.icon,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 if (stop.suggestedTime.isNotEmpty)
                   Text(stop.suggestedTime, style: text.bodySmall),
               ],
             ),
             const SizedBox(width: AppSpacing.md),
-            NetworkPhoto(stop.photo, width: 52, height: 52, radius: AppRadius.brSm),
+            NetworkPhoto(
+              stop.photo,
+              width: 52,
+              height: 52,
+              radius: AppRadius.brMd,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
@@ -224,10 +266,18 @@ class _StopRow extends StatelessWidget {
                 children: [
                   Text(stop.name, style: text.titleSmall),
                   if (stop.note.isNotEmpty)
-                    Text(stop.note, style: text.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(
+                      stop.note,
+                      style: text.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   if (meta.isNotEmpty) ...[
                     const SizedBox(height: 2),
-                    Text(meta, style: text.labelSmall?.copyWith(color: AppColors.teal)),
+                    Text(
+                      meta,
+                      style: text.labelSmall?.copyWith(color: AppColors.teal),
+                    ),
                   ],
                 ],
               ),

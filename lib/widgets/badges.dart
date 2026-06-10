@@ -13,6 +13,9 @@ class Pill extends StatelessWidget {
   final Color? background;
   final bool solid;
 
+  /// Translucent white pill with ink text — for placing on top of photos.
+  final bool glass;
+
   const Pill({
     super.key,
     required this.label,
@@ -20,15 +23,24 @@ class Pill extends StatelessWidget {
     required this.color,
     this.background,
     this.solid = false,
+    this.glass = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bg = solid ? color : (background ?? color.withValues(alpha: 0.14));
-    final fg = solid ? Colors.white : color;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bg = glass
+        ? (isDarkMode ? AppColors.glassDark : AppColors.glass)
+        : (solid ? color : (background ?? color.withValues(alpha: 0.14)));
+    final fg = glass
+        ? (isDarkMode ? AppColors.darkInk : AppColors.ink)
+        : (solid ? Colors.white : color);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: bg, borderRadius: AppRadius.brSm),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -38,7 +50,11 @@ class Pill extends StatelessWidget {
           ],
           Text(
             label,
-            style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 12),
+            style: TextStyle(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -49,12 +65,24 @@ class Pill extends StatelessWidget {
 class CategoryChip extends StatelessWidget {
   final String categoryId;
   final bool solid;
-  const CategoryChip(this.categoryId, {super.key, this.solid = false});
+  final bool glass;
+  const CategoryChip(
+    this.categoryId, {
+    super.key,
+    this.solid = false,
+    this.glass = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final c = Categories.byId(categoryId);
-    return Pill(label: c.label, icon: c.icon, color: c.color, solid: solid);
+    return Pill(
+      label: c.label,
+      icon: c.icon,
+      color: c.color,
+      solid: solid,
+      glass: glass,
+    );
   }
 }
 
@@ -84,18 +112,21 @@ class StatusBadge extends StatelessWidget {
 class VerifiedBadge extends StatelessWidget {
   const VerifiedBadge({super.key});
   @override
-  Widget build(BuildContext context) =>
-      const Pill(label: 'Verified', icon: Icons.verified_rounded, color: AppColors.info);
+  Widget build(BuildContext context) => const Pill(
+    label: 'Verified',
+    icon: Icons.verified_rounded,
+    color: AppColors.info,
+  );
 }
 
 class HiddenGemBadge extends StatelessWidget {
   const HiddenGemBadge({super.key});
   @override
   Widget build(BuildContext context) => const Pill(
-        label: 'Hidden gem',
-        icon: Icons.auto_awesome_rounded,
-        color: AppColors.coral,
-      );
+    label: 'Hidden gem',
+    icon: Icons.auto_awesome_rounded,
+    color: AppColors.coral,
+  );
 }
 
 class TagChip extends StatelessWidget {
@@ -106,11 +137,13 @@ class TagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
-        borderRadius: AppRadius.brSm,
-        border: Border.all(color: scheme.outline),
+        borderRadius: const BorderRadius.all(Radius.circular(AppRadius.pill)),
       ),
       child: Text(label, style: Theme.of(context).textTheme.bodySmall),
     );

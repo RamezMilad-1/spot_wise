@@ -21,13 +21,15 @@ class AppColors {
   static const Color amber = Color(0xFFFFB454); // ratings / highlights
 
   // ── Neutrals (light) ──────────────────────────────────────────────────────
-  static const Color cream = Color(0xFFFBF8F3); // app background
+  static const Color cream = Color(
+    0xFFF7F7F5,
+  ); // app background (clean near-white)
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceAlt = Color(0xFFF1EEE8);
-  static const Color ink = Color(0xFF13232B); // primary text
-  static const Color inkSoft = Color(0xFF4A5A62); // secondary text
-  static const Color inkFaint = Color(0xFF8A98A0); // hints / disabled
-  static const Color border = Color(0xFFE6E1D8);
+  static const Color surfaceAlt = Color(0xFFF1F1EF); // chips / input fills
+  static const Color ink = Color(0xFF15171A); // primary text + neutral controls
+  static const Color inkSoft = Color(0xFF5C6066); // secondary text
+  static const Color inkFaint = Color(0xFF9AA0A6); // hints / disabled
+  static const Color border = Color(0xFFEAEAE7); // hairline
 
   // ── Neutrals (dark) ───────────────────────────────────────────────────────
   static const Color darkBg = Color(0xFF0E1A1F);
@@ -44,6 +46,20 @@ class AppColors {
   static const Color danger = Color(0xFFE0533D);
   static const Color info = Color(0xFF2D8CCB);
   static const Color star = amber;
+
+  // ── Surfaces & effects ────────────────────────────────────────────────────
+  /// Translucent white for circular buttons sitting on top of photos.
+  static const Color glass = Color(0xE6FFFFFF);
+
+  /// Translucent dark surface — dark-mode twin of [glass] for frosted
+  /// surfaces (floating dock, glass buttons) over photos or content.
+  static const Color glassDark = Color(0xB3152A30);
+
+  /// Soft, diffuse card shadow (replaces hard borders for an airy, premium feel).
+  static const List<BoxShadow> softShadow = [
+    BoxShadow(color: Color(0x14000000), blurRadius: 24, offset: Offset(0, 10)),
+    BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 2)),
+  ];
 
   // ── Gradients ────────────────────────────────────────────────────────────
   static const LinearGradient lagoonGradient = LinearGradient(
@@ -64,5 +80,13 @@ class AppColors {
     end: Alignment.bottomCenter,
     colors: [Color(0x00000000), Color(0x99000000)],
     stops: [0.45, 1.0],
+  );
+
+  /// Stronger bottom-up scrim for editorial overlay cards (text on the image).
+  static const LinearGradient cardScrim = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x00000000), Color(0x40000000), Color(0xCC000000)],
+    stops: [0.35, 0.68, 1.0],
   );
 }

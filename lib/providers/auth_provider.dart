@@ -30,8 +30,7 @@ class AuthProvider extends ChangeNotifier {
     String email,
     String password, {
     UserRole role = UserRole.user,
-  }) =>
-      _run(() => services.auth.register(name, email, password, role: role));
+  }) => _run(() => services.auth.register(name, email, password, role: role));
 
   Future<bool> _run(Future<AppUser> Function() action) async {
     _setBusy(true);
@@ -61,7 +60,9 @@ class AuthProvider extends ChangeNotifier {
       services.auth.cacheUser(updated);
       _user = updated;
       notifyListeners();
-    } catch (_) {/* token sync is best-effort */}
+    } catch (_) {
+      /* token sync is best-effort */
+    }
   }
 
   Future<bool> sendPasswordReset(String email) async {
@@ -125,7 +126,9 @@ class AuthProvider extends ChangeNotifier {
     try {
       await services.backend.saveUser(updated);
       services.auth.cacheUser(updated);
-    } catch (_) {/* optimistic; stays saved locally */}
+    } catch (_) {
+      /* optimistic; stays saved locally */
+    }
   }
 
   void clearError() {

@@ -75,16 +75,28 @@ class PhotoPickerRow extends StatelessWidget {
         for (var i = 0; i < photos.length; i++)
           Stack(
             children: [
-              NetworkPhoto(photos[i], width: 84, height: 84, radius: AppRadius.brMd),
+              NetworkPhoto(
+                photos[i],
+                width: 84,
+                height: 84,
+                radius: AppRadius.brLg,
+              ),
               Positioned(
                 top: 2,
                 right: 2,
                 child: GestureDetector(
                   onTap: () => _remove(i),
                   child: Container(
-                    decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
                     padding: const EdgeInsets.all(2),
-                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                   ),
                 ),
               ),
@@ -93,16 +105,19 @@ class PhotoPickerRow extends StatelessWidget {
         if (photos.length < max)
           InkWell(
             onTap: () => _showSource(context),
-            borderRadius: AppRadius.brMd,
+            borderRadius: AppRadius.brLg,
             child: Container(
               width: 84,
               height: 84,
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHighest,
-                borderRadius: AppRadius.brMd,
+                borderRadius: AppRadius.brLg,
                 border: Border.all(color: scheme.outline),
               ),
-              child: Icon(Icons.add_a_photo_outlined, color: scheme.onSurfaceVariant),
+              child: Icon(
+                Icons.add_a_photo_outlined,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ),
       ],

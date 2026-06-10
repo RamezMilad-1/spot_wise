@@ -46,7 +46,9 @@ class NetworkPhoto extends StatelessWidget {
     }
 
     final sized = SizedBox(width: width, height: height, child: child);
-    return radius != null ? ClipRRect(borderRadius: radius!, child: sized) : sized;
+    return radius != null
+        ? ClipRRect(borderRadius: radius!, child: sized)
+        : sized;
   }
 
   Widget _memory(BuildContext context, String dataUri) {

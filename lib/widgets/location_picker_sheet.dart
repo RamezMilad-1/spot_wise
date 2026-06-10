@@ -74,7 +74,11 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
       Navigator.pop(context, (loc, 'My location'));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\'t read your location — search a place instead.')),
+        const SnackBar(
+          content: Text(
+            'Couldn\'t read your location — search a place instead.',
+          ),
+        ),
       );
     }
   }
@@ -101,8 +105,15 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
               leading: CircleAvatar(
                 backgroundColor: AppColors.tealMist,
                 child: _locating
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.my_location_rounded, color: AppColors.tealDark),
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(
+                        Icons.my_location_rounded,
+                        color: AppColors.tealDark,
+                      ),
               ),
               title: const Text('Use my current location'),
               onTap: _locating ? null : _useMyLocation,
@@ -125,7 +136,9 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
               )
             else
               ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.4,
+                ),
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: _results.length,
@@ -134,7 +147,11 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                     return ListTile(
                       leading: const Icon(Icons.place_outlined),
                       title: Text(r.name),
-                      subtitle: Text(r.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: Text(
+                        r.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       onTap: () => Navigator.pop(context, (r.latLng, r.name)),
                     );
                   },

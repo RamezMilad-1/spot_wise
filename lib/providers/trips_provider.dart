@@ -19,10 +19,8 @@ class TripsProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isEmpty => _trips.isEmpty;
 
-  List<Trip> get upcoming =>
-      _trips.where((t) => !t.completed).toList();
-  List<Trip> get completed =>
-      _trips.where((t) => t.completed).toList();
+  List<Trip> get upcoming => _trips.where((t) => !t.completed).toList();
+  List<Trip> get completed => _trips.where((t) => t.completed).toList();
 
   Future<void> load() async {
     final uid = services.auth.currentUser?.id;
@@ -81,7 +79,9 @@ class TripsProvider extends ChangeNotifier {
       lat: spot.lat,
       lng: spot.lng,
       dayPart: _nextPart(days[index].stops.length),
-      note: spot.bestTimeToVisit.isEmpty ? '' : 'Best around ${spot.bestTimeToVisit.toLowerCase()}.',
+      note: spot.bestTimeToVisit.isEmpty
+          ? ''
+          : 'Best around ${spot.bestTimeToVisit.toLowerCase()}.',
       estimatedCost: TripEstimator.stopCost(spot),
       durationMinutes: TripEstimator.durationMinutes(spot.categoryId),
     );
@@ -100,7 +100,12 @@ class TripsProvider extends ChangeNotifier {
     await _persistStructure(trip, days);
   }
 
-  Future<void> reorderStops(Trip trip, int dayNumber, int oldIndex, int newIndex) async {
+  Future<void> reorderStops(
+    Trip trip,
+    int dayNumber,
+    int oldIndex,
+    int newIndex,
+  ) async {
     final days = [...trip.days];
     final di = days.indexWhere((d) => d.dayNumber == dayNumber);
     if (di < 0) return;

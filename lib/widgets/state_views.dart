@@ -39,7 +39,11 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off_rounded, size: 56, color: Theme.of(context).colorScheme.outline),
+            Icon(
+              Icons.cloud_off_rounded,
+              size: 56,
+              color: Theme.of(context).colorScheme.outline,
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Something went wrong',
@@ -47,10 +51,19 @@ class ErrorView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text(message, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.xl),
-              AppButton.outline('Try again', icon: Icons.refresh_rounded, onPressed: onRetry, expand: false),
+              AppButton.outline(
+                'Try again',
+                icon: Icons.refresh_rounded,
+                onPressed: onRetry,
+                expand: false,
+              ),
             ],
           ],
         ),
@@ -89,13 +102,21 @@ class EmptyView extends StatelessWidget {
                 color: scheme.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 44, color: scheme.primary),
+              child: Icon(icon, size: 44, color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text(title, style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
             if (message != null) ...[
               const SizedBox(height: AppSpacing.sm),
-              Text(message!, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+              Text(
+                message!,
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
             ],
             if (action != null) ...[
               const SizedBox(height: AppSpacing.xl),

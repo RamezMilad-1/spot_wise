@@ -43,7 +43,11 @@ class _SignInPrompt extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -58,10 +62,15 @@ class _SignInPrompt extends StatelessWidget {
               child: const Icon(Icons.lock_open_rounded, color: Colors.white),
             ),
             const SizedBox(height: AppSpacing.md),
-            Text('Sign in to continue', style: text.titleLarge, textAlign: TextAlign.center),
+            Text(
+              'Sign in to continue',
+              style: text.titleLarge,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              message ?? 'Create a free account to save spots, plan trips and post your own places.',
+              message ??
+                  'Create a free account to save spots, plan trips and post your own places.',
               style: text.bodyMedium,
               textAlign: TextAlign.center,
             ),

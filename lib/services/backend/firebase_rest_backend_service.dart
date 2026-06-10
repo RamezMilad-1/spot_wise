@@ -24,7 +24,7 @@ import 'backend_service.dart';
 class FirebaseRestBackendService implements BackendService {
   final http.Client _client;
   FirebaseRestBackendService({http.Client? client})
-      : _client = client ?? http.Client();
+    : _client = client ?? http.Client();
 
   String get _base {
     final url = AppConfig.firebaseDbUrl;
@@ -123,9 +123,10 @@ class FirebaseRestBackendService implements BackendService {
   // ── Reviews ────────────────────────────────────────────────────────────
   @override
   Future<List<Review>> getReviews(String spotId) async {
-    final list = _mapCollection(await _getCollection('reviews'), Review.fromJson)
-        .where((r) => r.spotId == spotId)
-        .toList();
+    final list = _mapCollection(
+      await _getCollection('reviews'),
+      Review.fromJson,
+    ).where((r) => r.spotId == spotId).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
@@ -140,9 +141,10 @@ class FirebaseRestBackendService implements BackendService {
   // ── Trips ──────────────────────────────────────────────────────────────
   @override
   Future<List<Trip>> getTrips(String userId) async {
-    final list = _mapCollection(await _getCollection('trips'), Trip.fromJson)
-        .where((t) => t.userId == userId)
-        .toList();
+    final list = _mapCollection(
+      await _getCollection('trips'),
+      Trip.fromJson,
+    ).where((t) => t.userId == userId).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
@@ -160,10 +162,10 @@ class FirebaseRestBackendService implements BackendService {
   // ── Notifications ──────────────────────────────────────────────────────
   @override
   Future<List<NotificationItem>> getNotifications(String userId) async {
-    final list =
-        _mapCollection(await _getCollection('notifications'), NotificationItem.fromJson)
-            .where((n) => n.userId == userId)
-            .toList();
+    final list = _mapCollection(
+      await _getCollection('notifications'),
+      NotificationItem.fromJson,
+    ).where((n) => n.userId == userId).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
@@ -183,8 +185,10 @@ class FirebaseRestBackendService implements BackendService {
 
   @override
   Future<void> markAllNotificationsRead(String userId) async {
-    final all =
-        _mapCollection(await _getCollection('notifications'), NotificationItem.fromJson);
+    final all = _mapCollection(
+      await _getCollection('notifications'),
+      NotificationItem.fromJson,
+    );
     for (final n in all.where((n) => n.userId == userId && !n.isRead)) {
       await _patch('notifications/${n.id}', {'isRead': true});
     }
@@ -193,7 +197,10 @@ class FirebaseRestBackendService implements BackendService {
   // ── Reports ────────────────────────────────────────────────────────────
   @override
   Future<List<Report>> getReports() async {
-    final list = _mapCollection(await _getCollection('reports'), Report.fromJson);
+    final list = _mapCollection(
+      await _getCollection('reports'),
+      Report.fromJson,
+    );
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
@@ -218,13 +225,17 @@ class FirebaseRestBackendService implements BackendService {
 
   @override
   Future<List<AppUser>> getUsers() async {
-    final list = _mapCollection(await _getCollection('users'), AppUser.fromJson);
+    final list = _mapCollection(
+      await _getCollection('users'),
+      AppUser.fromJson,
+    );
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
 
   @override
-  Future<void> saveUser(AppUser user) => _put('users/${user.id}', user.toJson());
+  Future<void> saveUser(AppUser user) =>
+      _put('users/${user.id}', user.toJson());
 
   @override
   Future<void> deleteUser(String id) => _delete('users/$id');

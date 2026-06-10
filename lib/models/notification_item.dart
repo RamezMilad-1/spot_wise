@@ -40,23 +40,23 @@ class NotificationItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'userId': userId,
-        'title': title,
-        'body': body,
-        'type': type.value,
-        'isRead': isRead,
-        'spotId': spotId,
-        'createdAt': createdAt.millisecondsSinceEpoch,
-      };
+    'userId': userId,
+    'title': title,
+    'body': body,
+    'type': type.value,
+    'isRead': isRead,
+    'spotId': spotId,
+    'createdAt': createdAt.millisecondsSinceEpoch,
+  };
 
   NotificationItem copyWith({bool? isRead}) => NotificationItem(
-        id: id,
-        userId: userId,
-        title: title,
-        body: body,
-        type: type,
-        isRead: isRead ?? this.isRead,
-        spotId: spotId,
-        createdAt: createdAt,
-      );
+    id: id,
+    userId: userId,
+    title: title,
+    body: body,
+    type: type,
+    isRead: isRead ?? this.isRead,
+    spotId: spotId,
+    createdAt: createdAt,
+  );
 }

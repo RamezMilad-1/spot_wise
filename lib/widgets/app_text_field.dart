@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 
 /// Labelled form field with a label above the input and optional password
@@ -68,10 +69,16 @@ class _AppTextFieldState extends State<AppTextField> {
           autofocus: widget.autofocus,
           decoration: InputDecoration(
             hintText: widget.hint,
-            prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
+            prefixIcon: widget.prefixIcon != null
+                ? Icon(widget.prefixIcon)
+                : null,
             suffixIcon: widget.obscure
                 ? IconButton(
-                    icon: Icon(_obscured ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    icon: Icon(
+                      _obscured
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
                     onPressed: () => setState(() => _obscured = !_obscured),
                   )
                 : widget.suffix,
@@ -82,7 +89,7 @@ class _AppTextFieldState extends State<AppTextField> {
   }
 }
 
-/// Rounded search bar with a clear button that appears when there's text.
+/// Pill-shaped search bar with a clear button that appears when there's text.
 class AppSearchField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -105,6 +112,11 @@ class AppSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    OutlineInputBorder pillBorder(Color c, [double w = 1.2]) =>
+        OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(AppRadius.pill)),
+          borderSide: BorderSide(color: c, width: w),
+        );
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, value, _) {
@@ -118,6 +130,9 @@ class AppSearchField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: const Icon(Icons.search_rounded),
+            border: pillBorder(Colors.transparent),
+            enabledBorder: pillBorder(Colors.transparent),
+            focusedBorder: pillBorder(AppColors.teal, 1.6),
             suffixIcon: value.text.isEmpty
                 ? null
                 : IconButton(

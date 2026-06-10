@@ -10,7 +10,11 @@ enum SnackType { info, success, error }
 class AppSnackbar {
   AppSnackbar._();
 
-  static void show(BuildContext context, String message, {SnackType type = SnackType.info}) {
+  static void show(
+    BuildContext context,
+    String message, {
+    SnackType type = SnackType.info,
+  }) {
     final (icon, color) = switch (type) {
       SnackType.success => (Icons.check_circle_rounded, AppColors.success),
       SnackType.error => (Icons.error_rounded, AppColors.danger),
@@ -52,24 +56,57 @@ Future<bool> showConfirmSheet(
       final text = Theme.of(ctx).textTheme;
       return SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, AppSpacing.xl),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.sm,
+            AppSpacing.xl,
+            AppSpacing.xl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 40, color: destructive ? AppColors.danger : AppColors.teal),
-                const SizedBox(height: AppSpacing.md),
+                Center(
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: destructive
+                          ? AppColors.coralMist
+                          : Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 30,
+                      color: destructive
+                          ? AppColors.danger
+                          : Theme.of(ctx).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
               ],
               Text(title, style: text.titleLarge, textAlign: TextAlign.center),
               if (message != null) ...[
                 const SizedBox(height: AppSpacing.sm),
-                Text(message, style: text.bodyMedium, textAlign: TextAlign.center),
+                Text(
+                  message,
+                  style: text.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
               ],
               const SizedBox(height: AppSpacing.xl),
               destructive
-                  ? AppButton.accent(confirmLabel, onPressed: () => Navigator.pop(ctx, true))
-                  : AppButton(confirmLabel, onPressed: () => Navigator.pop(ctx, true)),
+                  ? AppButton.accent(
+                      confirmLabel,
+                      onPressed: () => Navigator.pop(ctx, true),
+                    )
+                  : AppButton(
+                      confirmLabel,
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
               const SizedBox(height: AppSpacing.sm),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),

@@ -12,8 +12,18 @@ import '../services/service_locator.dart';
 /// holds the resulting [Trip].
 class AiPlannerProvider extends ChangeNotifier {
   static const List<String> suggestedInterests = [
-    'Food', 'History', 'Art', 'Nature', 'Views', 'Nightlife',
-    'Shopping', 'Family', 'Hidden gems', 'Adventure', 'Coffee', 'Architecture',
+    'Food',
+    'History',
+    'Art',
+    'Nature',
+    'Views',
+    'Nightlife',
+    'Shopping',
+    'Family',
+    'Hidden gems',
+    'Adventure',
+    'Coffee',
+    'Architecture',
   ];
 
   String destination = '';
@@ -63,7 +73,9 @@ class AiPlannerProvider extends ChangeNotifier {
   }
 
   void toggleInterest(String interest) {
-    interests.contains(interest) ? interests.remove(interest) : interests.add(interest);
+    interests.contains(interest)
+        ? interests.remove(interest)
+        : interests.add(interest);
     notifyListeners();
   }
 

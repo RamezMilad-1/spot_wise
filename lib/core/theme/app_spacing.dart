@@ -32,6 +32,10 @@ class AppSpacing {
 
   static const EdgeInsets screenPadding = EdgeInsets.symmetric(horizontal: lg);
   static const EdgeInsets cardPadding = EdgeInsets.all(lg);
+
+  // Floating dock (home shell bottom navigation).
+  static const double dockHeight = 64;
+  static const double dockMaxWidth = 480;
 }
 
 /// Corner-radius scale.
@@ -41,11 +45,14 @@ class AppRadius {
   static const double sm = 8;
   static const double md = 14;
   static const double lg = 20;
+  static const double card = 22;
   static const double xl = 28;
+  static const double dock = 32;
   static const double pill = 999;
 
   static const BorderRadius brSm = BorderRadius.all(Radius.circular(sm));
   static const BorderRadius brMd = BorderRadius.all(Radius.circular(md));
   static const BorderRadius brLg = BorderRadius.all(Radius.circular(lg));
+  static const BorderRadius brCard = BorderRadius.all(Radius.circular(card));
   static const BorderRadius brXl = BorderRadius.all(Radius.circular(xl));
 }

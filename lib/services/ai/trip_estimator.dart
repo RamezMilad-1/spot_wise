@@ -19,20 +19,20 @@ class TripEstimator {
 
   /// Typical visit length per category, in minutes.
   static int durationMinutes(String categoryId) => switch (categoryId) {
-        'museum' => 120,
-        'landmark' => 90,
-        'historic' => 75,
-        'art' => 90,
-        'nature' => 90,
-        'beach' => 120,
-        'viewpoint' => 45,
-        'food' => 75,
-        'cafe' => 45,
-        'nightlife' => 120,
-        'shopping' => 60,
-        'adventure' => 180,
-        _ => 75,
-      };
+    'museum' => 120,
+    'landmark' => 90,
+    'historic' => 75,
+    'art' => 90,
+    'nature' => 90,
+    'beach' => 120,
+    'viewpoint' => 45,
+    'food' => 75,
+    'cafe' => 45,
+    'nightlife' => 120,
+    'shopping' => 60,
+    'adventure' => 180,
+    _ => 75,
+  };
 
   /// Per-person spend (USD) for a single stop, from its price tier + category.
   /// "Free" attractions cost nothing, but a free-listed café/eatery still
@@ -67,8 +67,9 @@ class TripEstimator {
   /// Re-stamps every stop with an accurate clock time + day-part, starting at
   /// 09:00, advancing by each stop's duration + a travel buffer, and slotting a
   /// one-hour lunch break around midday. Preserves cost/duration on each stop.
-  static List<TripDay> schedule(List<TripDay> days) =>
-      [for (final day in days) day.copyWith(stops: _scheduleDay(day.stops))];
+  static List<TripDay> schedule(List<TripDay> days) => [
+    for (final day in days) day.copyWith(stops: _scheduleDay(day.stops)),
+  ];
 
   static List<TripStop> _scheduleDay(List<TripStop> stops) {
     var clock = 9 * 60; // 09:00, in minutes since midnight
@@ -110,6 +111,8 @@ class TripEstimator {
       days.length * dailyExtras(pace);
 
   /// Full estimated trip cost: stop spend + daily extras.
-  static double total(List<TripDay> days, {TripPace pace = TripPace.balanced}) =>
-      stopsCost(days) + extrasCost(days, pace);
+  static double total(
+    List<TripDay> days, {
+    TripPace pace = TripPace.balanced,
+  }) => stopsCost(days) + extrasCost(days, pace);
 }

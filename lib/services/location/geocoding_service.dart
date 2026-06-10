@@ -41,15 +41,20 @@ class GeocodingService {
       '&format=json&addressdetails=1&limit=6&featuretype=city',
     );
 
-    final res = await _client.get(uri, headers: {
-      // Required by Nominatim's usage policy (ignored by browsers on web).
-      'User-Agent': AppConfig.osmUserAgent,
-      'Accept': 'application/json',
-    });
+    final res = await _client.get(
+      uri,
+      headers: {
+        // Required by Nominatim's usage policy (ignored by browsers on web).
+        'User-Agent': AppConfig.osmUserAgent,
+        'Accept': 'application/json',
+      },
+    );
     if (res.statusCode != 200) return [];
 
     final list = jsonDecode(res.body) as List;
-    return list.map((e) => _parse(Map<String, dynamic>.from(e as Map))).toList();
+    return list
+        .map((e) => _parse(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   GeoResult _parse(Map<String, dynamic> json) {

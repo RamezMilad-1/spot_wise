@@ -54,7 +54,9 @@ class _MapScreenState extends State<MapScreen> {
     _syncCamera(mapP);
 
     final visible = mapP.visible(spotsP.spots);
-    final selected = mapP.selectedSpotId == null ? null : spotsP.byId(mapP.selectedSpotId!);
+    final selected = mapP.selectedSpotId == null
+        ? null
+        : spotsP.byId(mapP.selectedSpotId!);
 
     final markers = [
       for (final s in visible)
@@ -92,21 +94,24 @@ class _MapScreenState extends State<MapScreen> {
                 maxZoom: 19,
               ),
               if (mapP.userLocation != null)
-                MarkerLayer(markers: [
-                  Marker(
-                    point: mapP.userLocation!,
-                    width: 22,
-                    height: 22,
-                    child: const _UserDot(),
-                  ),
-                ]),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: mapP.userLocation!,
+                      width: 22,
+                      height: 22,
+                      child: const _UserDot(),
+                    ),
+                  ],
+                ),
               MarkerClusterLayerWidget(
                 options: MarkerClusterLayerOptions(
                   maxClusterRadius: 48,
                   size: const Size(44, 44),
                   padding: const EdgeInsets.all(50),
                   markers: markers,
-                  builder: (context, clustered) => ClusterMarker(clustered.length),
+                  builder: (context, clustered) =>
+                      ClusterMarker(clustered.length),
                 ),
               ),
             ],
@@ -132,7 +137,8 @@ class _MapScreenState extends State<MapScreen> {
             Positioned(
               left: AppSpacing.md,
               right: AppSpacing.md,
-              bottom: AppSpacing.md,
+              // Clear the floating dock (injected into bottom MediaQuery padding).
+              bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.md,
               child: _SelectedCard(
                 spot: selected,
                 onClose: () => mapP.select(null),
@@ -145,7 +151,7 @@ class _MapScreenState extends State<MapScreen> {
           : FloatingActionButton(
               heroTag: 'locate',
               backgroundColor: Theme.of(context).colorScheme.surface,
-              foregroundColor: AppColors.teal,
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
               onPressed: () => mapP.locateMe(),
               child: const Icon(Icons.my_location_rounded),
             ),
@@ -170,85 +176,109 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onSearch;
   final VoidCallback onFilter;
 
-  const _TopBar({required this.activeFilters, required this.onSearch, required this.onFilter});
+  const _TopBar({
+    required this.activeFilters,
+    required this.onSearch,
+    required this.onFilter,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Material(
-          color: scheme.surface,
-          borderRadius: AppRadius.brMd,
-          elevation: 2,
-          shadowColor: Colors.black26,
-          child: InkWell(
-            onTap: () => shellScaffoldKey.currentState?.openDrawer(),
-            borderRadius: AppRadius.brMd,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Icon(Icons.menu_rounded, color: scheme.onSurface),
-            ),
+        _TopBarPill(
+          onTap: () => shellScaffoldKey.currentState?.openDrawer(),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Icon(Icons.menu_rounded, color: scheme.onSurface),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: Material(
-            color: scheme.surface,
-            borderRadius: AppRadius.brMd,
-            elevation: 2,
-            shadowColor: Colors.black26,
-            child: InkWell(
-              onTap: onSearch,
-              borderRadius: AppRadius.brMd,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
-                child: Row(
-                  children: [
-                    Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
-                    const SizedBox(width: AppSpacing.md),
-                    Text('Where are you going?',
-                        style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Material(
-          color: scheme.surface,
-          borderRadius: AppRadius.brMd,
-          elevation: 2,
-          shadowColor: Colors.black26,
-          child: InkWell(
-            onTap: onFilter,
-            borderRadius: AppRadius.brMd,
+          child: _TopBarPill(
+            onTap: onSearch,
             child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Stack(
-                clipBehavior: Clip.none,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: 14,
+              ),
+              child: Row(
                 children: [
-                  Icon(Icons.tune_rounded, color: scheme.onSurface),
-                  if (activeFilters > 0)
-                    Positioned(
-                      top: -6,
-                      right: -6,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(color: AppColors.coral, shape: BoxShape.circle),
-                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                        child: Text('$activeFilters',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
-                      ),
-                    ),
+                  Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
+                  const SizedBox(width: AppSpacing.md),
+                  Text(
+                    'Where are you going?',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ],
               ),
             ),
           ),
         ),
+        const SizedBox(width: AppSpacing.sm),
+        _TopBarPill(
+          onTap: onFilter,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(Icons.tune_rounded, color: scheme.onSurface),
+                if (activeFilters > 0)
+                  Positioned(
+                    top: -6,
+                    right: -6,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.coral,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$activeFilters',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// Soft-shadowed pill container for the map's floating top controls.
+class _TopBarPill extends StatelessWidget {
+  final VoidCallback onTap;
+  final Widget child;
+  const _TopBarPill({required this.onTap, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    const radius = BorderRadius.all(Radius.circular(AppRadius.pill));
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        borderRadius: radius,
+        boxShadow: AppColors.softShadow,
+      ),
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(onTap: onTap, borderRadius: radius, child: child),
+      ),
     );
   }
 }
@@ -264,7 +294,12 @@ class _SelectedCard extends StatelessWidget {
       elevation: 6,
       shadowColor: Colors.black26,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.sm, AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -273,11 +308,18 @@ class _SelectedCard extends StatelessWidget {
                 Expanded(
                   child: SpotListTile(
                     spot: spot,
-                    onTap: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.spotDetails,
+                      arguments: spot,
+                    ),
                     trailing: const SizedBox.shrink(),
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.close_rounded), onPressed: onClose),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: onClose,
+                ),
               ],
             ),
           ],
@@ -297,7 +339,10 @@ class _EmptyPill extends StatelessWidget {
       borderRadius: const BorderRadius.all(Radius.circular(999)),
       elevation: 2,
       child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         child: Text('No spots match your filters'),
       ),
     );
@@ -315,7 +360,11 @@ class _UserDot extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: [
-          BoxShadow(color: AppColors.info.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 2),
+          BoxShadow(
+            color: AppColors.info.withValues(alpha: 0.4),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
         ],
       ),
     );

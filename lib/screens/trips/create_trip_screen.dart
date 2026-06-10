@@ -23,8 +23,9 @@ class CreateTripScreen extends StatefulWidget {
 }
 
 class _CreateTripScreenState extends State<CreateTripScreen> {
-  late final TextEditingController _destination =
-      TextEditingController(text: widget.seedSpot?.city ?? '');
+  late final TextEditingController _destination = TextEditingController(
+    text: widget.seedSpot?.city ?? '',
+  );
   DateTime _startDate = DateTime.now().add(const Duration(days: 7));
   int _days = 3;
   bool _creating = false;
@@ -57,7 +58,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
 
     var days = List.generate(
       _days,
-      (i) => TripDay(dayNumber: i + 1, date: _startDate.add(Duration(days: i))),
+      (i) => TripDay(
+        dayNumber: i + 1,
+        date: _startDate.add(Duration(days: i)),
+      ),
     );
 
     final seed = widget.seedSpot;
@@ -71,7 +75,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         lng: seed.lng,
         dayPart: DayPart.morning,
       );
-      days = [days.first.copyWith(stops: [stop]), ...days.skip(1)];
+      days = [
+        days.first.copyWith(stops: [stop]),
+        ...days.skip(1),
+      ];
     }
 
     final trip = Trip(
@@ -92,8 +99,18 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     final id = await tripsP.createTrip(trip);
     if (!mounted) return;
     final created = tripsP.byId(id) ?? trip;
-    Navigator.pushReplacementNamed(context, AppRoutes.tripDetails, arguments: created);
+    Navigator.pushReplacementNamed(
+      context,
+      AppRoutes.tripDetails,
+      arguments: created,
+    );
   }
+
+  /// Neutral fill for the +/− day steppers (default tonal is coral-tinted).
+  ButtonStyle _stepperStyle(BuildContext context) => IconButton.styleFrom(
+    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+    foregroundColor: Theme.of(context).colorScheme.onSurface,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -119,11 +136,15 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 borderRadius: AppRadius.brMd,
-                border: Border.all(color: Theme.of(context).colorScheme.outline),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today_rounded, size: 18),
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: AppSpacing.md),
                   Text(Formatters.date(_startDate), style: text.bodyLarge),
                 ],
@@ -137,14 +158,19 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
             children: [
               IconButton.filledTonal(
                 onPressed: _days > 1 ? () => setState(() => _days--) : null,
+                style: _stepperStyle(context),
                 icon: const Icon(Icons.remove_rounded),
               ),
               Expanded(
-                child: Text('$_days ${_days == 1 ? 'day' : 'days'}',
-                    textAlign: TextAlign.center, style: text.titleLarge),
+                child: Text(
+                  '$_days ${_days == 1 ? 'day' : 'days'}',
+                  textAlign: TextAlign.center,
+                  style: text.titleLarge,
+                ),
               ),
               IconButton.filledTonal(
                 onPressed: _days < 14 ? () => setState(() => _days++) : null,
+                style: _stepperStyle(context),
                 icon: const Icon(Icons.add_rounded),
               ),
             ],
@@ -161,13 +187,22 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                 children: [
                   const Icon(Icons.add_location_alt_outlined, size: 18),
                   const SizedBox(width: AppSpacing.sm),
-                  Expanded(child: Text('“${widget.seedSpot!.name}” will be added to day 1.')),
+                  Expanded(
+                    child: Text(
+                      '“${widget.seedSpot!.name}” will be added to day 1.',
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
           const SizedBox(height: AppSpacing.xxl),
-          AppButton('Create trip', icon: Icons.check_rounded, loading: _creating, onPressed: _create),
+          AppButton(
+            'Create trip',
+            icon: Icons.check_rounded,
+            loading: _creating,
+            onPressed: _create,
+          ),
         ],
       ),
     );

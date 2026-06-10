@@ -13,10 +13,9 @@ import '../../providers/category_store.dart';
 import '../../providers/spots_provider.dart';
 import '../../widgets/app_menu_button.dart';
 import '../../widgets/location_picker_sheet.dart';
-import '../../widgets/network_photo.dart';
+import '../../widgets/max_width.dart';
 import '../../widgets/notification_bell.dart';
 import '../../widgets/offline_banner.dart';
-import '../../widgets/rating_stars.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/skeletons.dart';
 import '../../widgets/spot_card.dart';
@@ -55,9 +54,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
   }
 
   void _clearLocation() => setState(() {
-        _origin = null;
-        _placeLabel = null;
-      });
+    _origin = null;
+    _placeLabel = null;
+  });
 
   double _distM(Spot s) => _distance.as(LengthUnit.Meter, _origin!, s.latLng);
 
@@ -105,32 +104,31 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
             IconButton(
               icon: const Icon(Icons.shield_outlined),
               tooltip: 'Admin',
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.adminDashboard),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.adminDashboard),
             ),
-          IconButton(
-            tooltip: 'Filter',
-            icon: Badge(
-              isLabelVisible: _filter.activeCount > 0,
-              label: Text('${_filter.activeCount}'),
-              child: const Icon(Icons.tune_rounded),
-            ),
-            onPressed: _openFilters,
-          ),
           const NotificationBell(),
           const SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () => spotsP.load(force: true),
-        child: _buildBody(context, spotsP, auth),
+        child: MaxWidthBox(child: _buildBody(context, spotsP, auth)),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, SpotsProvider spotsP, AuthProvider auth) {
+  Widget _buildBody(
+    BuildContext context,
+    SpotsProvider spotsP,
+    AuthProvider auth,
+  ) {
     if (spotsP.loading && spotsP.isEmpty) return const SpotFeedSkeleton();
     if (spotsP.error != null && spotsP.isEmpty) {
-      return ErrorView(message: spotsP.error!, onRetry: () => spotsP.load(force: true));
+      return ErrorView(
+        message: spotsP.error!,
+        onRetry: () => spotsP.load(force: true),
+      );
     }
 
     final hasLocation = _origin != null;
@@ -145,21 +143,44 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
     final featured = spotsP.featured;
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+      // Clear the floating dock (its height is injected into the bottom
+      // MediaQuery padding by the shell's extendBody).
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
+      ),
       children: [
         const OfflineBanner(),
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
-          child: _SearchBarButton(onTap: _openSearch),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Expanded(child: _SearchBarButton(onTap: _openSearch)),
+              const SizedBox(width: AppSpacing.sm),
+              _FilterButton(count: _filter.activeCount, onTap: _openFilters),
+            ],
+          ),
         ),
-        _CategoryStrip(selected: _filter.categoryIds, onToggle: _toggleCategory),
-        _LocationBar(label: _placeLabel, onTap: _pickLocation, onClear: _clearLocation),
+        _CategoryStrip(
+          selected: _filter.categoryIds,
+          onToggle: _toggleCategory,
+        ),
+        _LocationBar(
+          label: _placeLabel,
+          onTap: _pickLocation,
+          onClear: _clearLocation,
+        ),
 
         if (activeMode) ...[
           if (hasLocation)
             SectionHeader(
               title: 'Closest near $_placeLabel',
-              subtitle: '${results.length} ${results.length == 1 ? 'spot' : 'spots'} · sorted by distance'
+              subtitle:
+                  '${results.length} ${results.length == 1 ? 'spot' : 'spots'} · sorted by distance'
                   '${filtering ? ' · filtered' : ''}',
             )
           else
@@ -173,19 +194,26 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
               child: EmptyView(
                 icon: Icons.filter_alt_off_rounded,
                 title: 'No matches',
-                message: 'Try another category, a wider area, or clear your filters.',
+                message:
+                    'Try another category, a wider area, or clear your filters.',
               ),
             )
           else
-            ...results.map((spot) =>
-                _spotCard(context, spot, auth, distance: hasLocation ? _distM(spot) : null)),
+            ...results.map(
+              (spot) => _spotCard(
+                context,
+                spot,
+                auth,
+                distance: hasLocation ? _distM(spot) : null,
+              ),
+            ),
         ] else ...[
           if (featured.isNotEmpty) ...[
             const SectionHeader(
               title: 'Featured',
               subtitle: 'Hand-picked by the SpotWise team',
             ),
-            _MiniRail(spots: featured),
+            _rail(context, featured, auth),
           ],
           if (recommended.isNotEmpty) ...[
             SectionHeader(
@@ -194,7 +222,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
                   ? 'Based on ${auth.user!.interests.take(2).join(' & ').toLowerCase()}'
                   : 'Top-rated places to start',
             ),
-            _MiniRail(spots: recommended),
+            _rail(context, recommended, auth),
           ],
           SectionHeader(
             title: 'Explore spots',
@@ -216,27 +244,81 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
     );
   }
 
-  Widget _spotCard(BuildContext context, Spot spot, AuthProvider auth, {double? distance}) => Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
-        child: SpotCard(
-          spot: spot,
-          isSaved: auth.isSaved(spot.id),
-          onToggleSave: () => _toggleSave(spot),
-          distanceMeters: distance,
-          onTap: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
+  Widget _spotCard(
+    BuildContext context,
+    Spot spot,
+    AuthProvider auth, {
+    double? distance,
+  }) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      AppSpacing.sm,
+      AppSpacing.lg,
+      AppSpacing.md,
+    ),
+    child: SpotCard(
+      spot: spot,
+      isSaved: auth.isSaved(spot.id),
+      onToggleSave: () => _toggleSave(spot),
+      distanceMeters: distance,
+      onTap: () =>
+          Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
+    ),
+  );
+
+  /// Horizontal rail of editorial overlay cards (Featured / Recommended).
+  Widget _rail(BuildContext context, List<Spot> spots, AuthProvider auth) {
+    return SizedBox(
+      height: 230,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.xs,
+          AppSpacing.lg,
+          AppSpacing.sm,
         ),
-      );
+        itemCount: spots.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
+        itemBuilder: (_, i) {
+          final spot = spots[i];
+          return SizedBox(
+            width: 270,
+            child: SpotOverlayCard(
+              spot: spot,
+              isSaved: auth.isSaved(spot.id),
+              onToggleSave: () => _toggleSave(spot),
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.spotDetails,
+                arguments: spot,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _LocationBar extends StatelessWidget {
   final String? label;
   final VoidCallback onTap;
   final VoidCallback onClear;
-  const _LocationBar({required this.label, required this.onTap, required this.onClear});
+  const _LocationBar({
+    required this.label,
+    required this.onTap,
+    required this.onClear,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final padding = const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0);
+    final padding = const EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      AppSpacing.sm,
+      AppSpacing.lg,
+      0,
+    );
     if (label == null) {
       return Padding(
         padding: padding,
@@ -251,24 +333,35 @@ class _LocationBar extends StatelessWidget {
         ),
       );
     }
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: padding,
       child: Material(
-        color: AppColors.tealMist.withValues(alpha: 0.5),
-        borderRadius: AppRadius.brMd,
+        color: scheme.surfaceContainerHighest,
+        borderRadius: const BorderRadius.all(Radius.circular(AppRadius.pill)),
         child: InkWell(
           onTap: onTap,
-          borderRadius: AppRadius.brMd,
+          borderRadius: const BorderRadius.all(Radius.circular(AppRadius.pill)),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: 10,
+            ),
             child: Row(
               children: [
-                const Icon(Icons.place_rounded, size: 18, color: AppColors.tealDark),
+                const Icon(
+                  Icons.place_rounded,
+                  size: 18,
+                  color: AppColors.teal,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     'Near $label',
-                    style: const TextStyle(color: AppColors.tealDark, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -276,9 +369,13 @@ class _LocationBar extends StatelessWidget {
                 InkWell(
                   onTap: onClear,
                   customBorder: const CircleBorder(),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.close_rounded, size: 18, color: AppColors.tealDark),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -298,11 +395,18 @@ class _ActiveFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        0,
+      ),
       child: Row(
         children: [
-          Text('$count ${count == 1 ? 'result' : 'results'}',
-              style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            '$count ${count == 1 ? 'result' : 'results'}',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const Spacer(),
           TextButton.icon(
             onPressed: onClear,
@@ -322,25 +426,70 @@ class _SearchBarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    const radius = BorderRadius.all(Radius.circular(AppRadius.pill));
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        borderRadius: radius,
+        boxShadow: AppColors.softShadow,
+      ),
+      child: Material(
+        color: scheme.surface,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: 15,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.search_rounded,
+                  color: scheme.onSurfaceVariant,
+                  size: 22,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  'Where are you going?',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The circular filter button beside the search bar (with an active-count badge).
+class _FilterButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+  const _FilterButton({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: scheme.surface,
-      borderRadius: AppRadius.brMd,
+      color: isDark ? AppColors.darkInk : AppColors.ink,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: AppRadius.brMd,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.brMd,
-            border: Border.all(color: scheme.outline),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
-              const SizedBox(width: AppSpacing.md),
-              Text('Where are you going?',
-                  style: Theme.of(context).textTheme.bodyMedium),
-            ],
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Badge(
+            isLabelVisible: count > 0,
+            label: Text('$count'),
+            child: Icon(
+              Icons.tune_rounded,
+              color: isDark ? AppColors.darkBg : Colors.white,
+              size: 22,
+            ),
           ),
         ),
       ),
@@ -360,102 +509,49 @@ class _CategoryStrip extends StatelessWidget {
       height: 92,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         itemCount: categories.length,
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (_, i) {
           final c = categories[i];
           final isSelected = selected.contains(c.id);
+          final scheme = Theme.of(context).colorScheme;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final selectedFill = isDark ? AppColors.darkInk : AppColors.ink;
+          final selectedIcon = isDark ? AppColors.darkBg : Colors.white;
           return InkWell(
             onTap: () => onToggle(c.id),
-            borderRadius: AppRadius.brMd,
+            borderRadius: AppRadius.brLg,
             child: Column(
               children: [
                 Container(
                   width: 54,
                   height: 54,
                   decoration: BoxDecoration(
-                    color: isSelected ? c.color : c.color.withValues(alpha: 0.14),
-                    borderRadius: AppRadius.brMd,
-                    border: isSelected ? Border.all(color: c.color, width: 2) : null,
+                    color: isSelected
+                        ? selectedFill
+                        : scheme.surfaceContainerHighest,
+                    borderRadius: AppRadius.brLg,
                   ),
-                  child: Icon(c.icon, color: isSelected ? Colors.white : c.color),
+                  child: Icon(
+                    c.icon,
+                    color: isSelected ? selectedIcon : c.color,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                Text(c.label,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: isSelected ? FontWeight.w700 : null,
-                        )),
+                Text(
+                  c.label,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: isSelected ? FontWeight.w700 : null,
+                  ),
+                ),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _MiniRail extends StatelessWidget {
-  final List<Spot> spots;
-  const _MiniRail({required this.spots});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 248,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        itemCount: spots.length,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (_, i) => _MiniSpotCard(spot: spots[i]),
-      ),
-    );
-  }
-}
-
-class _MiniSpotCard extends StatelessWidget {
-  final Spot spot;
-  const _MiniSpotCard({required this.spot});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return SizedBox(
-      width: 220,
-      child: Card(
-        child: InkWell(
-          onTap: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                children: [
-                  NetworkPhoto(spot.coverPhoto, width: 220, height: 130),
-                  if (spot.hiddenGem)
-                    const Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 18),
-                    ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(spot.name, style: text.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 2),
-                    Text(spot.location, style: text.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 6),
-                    RatingStars(spot.rating, size: 13, showValue: true),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

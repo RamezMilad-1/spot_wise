@@ -57,7 +57,8 @@ class _MySpotsScreenState extends State<MySpotsScreen> {
             return const EmptyView(
               icon: Icons.add_location_alt_outlined,
               title: 'No posts yet',
-              message: 'Spots you submit will show here with their review status.',
+              message:
+                  'Spots you submit will show here with their review status.',
             );
           }
           return RefreshIndicator(
@@ -66,7 +67,8 @@ class _MySpotsScreenState extends State<MySpotsScreen> {
               padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: spots.length,
               separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
-              itemBuilder: (_, i) => _MySpotCard(spot: spots[i], onChanged: _refresh),
+              itemBuilder: (_, i) =>
+                  _MySpotCard(spot: spots[i], onChanged: _refresh),
             ),
           );
         },
@@ -86,11 +88,15 @@ class _MySpotCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
+        onTap: () => Navigator.pushNamed(
+          context,
+          AppRoutes.spotDetails,
+          arguments: spot,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            NetworkPhoto(spot.coverPhoto, width: double.infinity, height: 120),
+            NetworkPhoto(spot.coverPhoto, width: double.infinity, height: 140),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
@@ -107,21 +113,31 @@ class _MySpotCard extends StatelessWidget {
                   if (spot.status == SpotStatus.rejected &&
                       (spot.rejectionReason?.isNotEmpty ?? false)) ...[
                     const SizedBox(height: AppSpacing.sm),
-                    Text('Reason: ${spot.rejectionReason}',
-                        style: text.bodySmall?.copyWith(color: AppColors.danger)),
+                    Text(
+                      'Reason: ${spot.rejectionReason}',
+                      style: text.bodySmall?.copyWith(color: AppColors.danger),
+                    ),
                   ],
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
                       TextButton.icon(
-                        onPressed: () => Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot),
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.spotDetails,
+                          arguments: spot,
+                        ),
                         icon: const Icon(Icons.visibility_outlined, size: 18),
                         label: const Text('View'),
                       ),
                       const Spacer(),
                       TextButton.icon(
                         onPressed: () async {
-                          await Navigator.pushNamed(context, AppRoutes.editSpot, arguments: spot);
+                          await Navigator.pushNamed(
+                            context,
+                            AppRoutes.editSpot,
+                            arguments: spot,
+                          );
                           await onChanged();
                         },
                         icon: const Icon(Icons.edit_outlined, size: 18),
