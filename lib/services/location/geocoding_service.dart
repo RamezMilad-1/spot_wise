@@ -57,6 +57,30 @@ class GeocodingService {
         .toList();
   }
 
+  /// City-level reverse lookup for a coordinate (used to auto-fill the
+  /// city/country fields when a spot's pin is placed). Null on any failure.
+  Future<GeoResult?> reverse(double lat, double lng) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.nominatimBase}/reverse'
+        '?lat=$lat&lon=$lng&format=jsonv2&addressdetails=1&zoom=10',
+      );
+      final res = await _client.get(
+        uri,
+        headers: {
+          'User-Agent': AppConfig.osmUserAgent,
+          'Accept': 'application/json',
+        },
+      );
+      if (res.statusCode != 200) return null;
+      final json = Map<String, dynamic>.from(jsonDecode(res.body) as Map);
+      if (json['error'] != null) return null;
+      return _parse(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
   GeoResult _parse(Map<String, dynamic> json) {
     final address = json['address'] is Map
         ? Map<String, dynamic>.from(json['address'] as Map)

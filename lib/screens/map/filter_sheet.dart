@@ -32,7 +32,9 @@ class _FilterSheetState extends State<FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = context.read<CategoryStore>().enabled;
+    // A–Z for travellers (the catalog order stays for admin / add-spot).
+    final categories = [...context.read<CategoryStore>().enabled]
+      ..sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
     final text = Theme.of(context).textTheme;
 
     return SafeArea(

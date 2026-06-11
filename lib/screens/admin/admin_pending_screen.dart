@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/constants/categories.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -8,12 +9,22 @@ import '../../models/spot.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/badges.dart';
+import '../../widgets/choice_chip_row.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/network_photo.dart';
 import '../../widgets/state_views.dart';
 
-class AdminPendingScreen extends StatelessWidget {
+class AdminPendingScreen extends StatefulWidget {
   const AdminPendingScreen({super.key});
+
+  @override
+  State<AdminPendingScreen> createState() => _AdminPendingScreenState();
+}
+
+class _AdminPendingScreenState extends State<AdminPendingScreen> {
+  /// First-come, first-served by default — fair to contributors.
+  bool _oldestFirst = true;
+  String? _categoryId;
 
   Future<void> _approve(BuildContext context, Spot spot) async {
     await context.read<AdminProvider>().approve(spot);
@@ -77,32 +88,101 @@ class AdminPendingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adminP = context.watch<AdminProvider>();
+    final all = adminP.pending;
+    final pending =
+        all
+            .where((s) => _categoryId == null || s.categoryId == _categoryId)
+            .toList()
+          ..sort(
+            (a, b) => _oldestFirst
+                ? a.createdAt.compareTo(b.createdAt)
+                : b.createdAt.compareTo(a.createdAt),
+          );
+    final categoryIds = {for (final s in all) s.categoryId}.toList()
+      ..sort((a, b) => Categories.labelFor(a).compareTo(Categories.labelFor(b)));
+    int byCategory(String id) => all.where((s) => s.categoryId == id).length;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Moderation queue')),
-      body: adminP.loading && adminP.pending.isEmpty
+      appBar: AppBar(
+        title: const Text('Moderation queue'),
+        actions: [
+          IconButton(
+            tooltip: _oldestFirst ? 'Oldest first' : 'Newest first',
+            icon: Icon(
+              _oldestFirst ? Icons.history_rounded : Icons.schedule_rounded,
+            ),
+            onPressed: () => setState(() => _oldestFirst = !_oldestFirst),
+          ),
+        ],
+      ),
+      body: adminP.loading && all.isEmpty
           ? const LoadingView()
-          : adminP.pending.isEmpty
+          : all.isEmpty
           ? const EmptyView(
               icon: Icons.verified_rounded,
               title: 'All clear',
               message: 'No spots are awaiting review right now.',
             )
-          : RefreshIndicator(
-              onRefresh: () => adminP.load(),
-              child: ListView.separated(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                itemCount: adminP.pending.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: AppSpacing.lg),
-                itemBuilder: (_, i) => _PendingCard(
-                  spot: adminP.pending[i],
-                  onApprove: () => _approve(context, adminP.pending[i]),
-                  onReject: () => _reject(context, adminP.pending[i]),
-                  onEdit: () => _edit(context, adminP.pending[i]),
-                  onDelete: () => _delete(context, adminP.pending[i]),
+          : Column(
+              children: [
+                const SizedBox(height: AppSpacing.md),
+                if (categoryIds.length > 1)
+                  ChoiceChipRow<String?>(
+                    selected: _categoryId,
+                    onSelected: (v) => setState(() => _categoryId = v),
+                    options: [
+                      ChipOption(null, 'All', count: all.length),
+                      for (final id in categoryIds)
+                        ChipOption(
+                          id,
+                          Categories.labelFor(id),
+                          count: byCategory(id),
+                          icon: Categories.iconFor(id),
+                        ),
+                    ],
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${pending.length} awaiting review · '
+                        '${_oldestFirst ? 'oldest' : 'newest'} first',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Expanded(
+                  child: pending.isEmpty
+                      ? const EmptyView(
+                          icon: Icons.filter_alt_off_rounded,
+                          title: 'Nothing here',
+                          message: 'No pending spots in this category.',
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () => adminP.load(),
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            itemCount: pending.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: AppSpacing.lg),
+                            itemBuilder: (_, i) => _PendingCard(
+                              spot: pending[i],
+                              onApprove: () => _approve(context, pending[i]),
+                              onReject: () => _reject(context, pending[i]),
+                              onEdit: () => _edit(context, pending[i]),
+                              onDelete: () => _delete(context, pending[i]),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
             ),
     );
   }

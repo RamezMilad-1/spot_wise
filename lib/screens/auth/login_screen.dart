@@ -23,11 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
 
-  static const _demos = [
-    ('Explorer', 'demo@spotwise.app', Icons.explore_outlined),
-    ('Admin', 'admin@spotwise.app', Icons.verified_user_outlined),
-  ];
-
   @override
   void dispose() {
     _email.dispose();
@@ -55,11 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       AppSnackbar.error(context, auth.error ?? 'Could not sign in.');
     }
-  }
-
-  void _fillDemo(String email) {
-    _email.text = email;
-    _password.text = 'spotwise';
   }
 
   @override
@@ -125,8 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xl),
-                _DemoLogins(demos: _demos, onPick: _fillDemo),
                 const SizedBox(height: AppSpacing.lg),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -148,57 +136,3 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-class _DemoLogins extends StatelessWidget {
-  final List<(String, String, IconData)> demos;
-  final ValueChanged<String> onPick;
-  const _DemoLogins({required this.demos, required this.onPick});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
-        borderRadius: AppRadius.brCard,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.bolt_rounded,
-                size: 18,
-                color: scheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Text('Demo logins — tap to fill', style: text.labelLarge),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          for (final d in demos)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: scheme.surface,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(d.$3, size: 18, color: scheme.onSurfaceVariant),
-              ),
-              title: Text(d.$1, style: text.titleSmall),
-              subtitle: Text(d.$2, style: text.bodySmall),
-              trailing: const Icon(Icons.north_west_rounded, size: 16),
-              onTap: () => onPick(d.$2),
-            ),
-          Text('Password for all: spotwise', style: text.bodySmall),
-        ],
-      ),
-    );
-  }
-}

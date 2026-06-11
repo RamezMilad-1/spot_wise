@@ -60,4 +60,17 @@ class Formatters {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
     return '$n';
   }
+
+  /// Tidies a typed place name ("germany" → "Germany") so country/city
+  /// filters don't fragment on casing. Words that already contain capitals
+  /// (Türkiye, McLeod) are left untouched.
+  static String placeName(String s) => s
+      .trim()
+      .split(RegExp(r'\s+'))
+      .map(
+        (w) => w == w.toLowerCase() && w.isNotEmpty
+            ? '${w[0].toUpperCase()}${w.substring(1)}'
+            : w,
+      )
+      .join(' ');
 }

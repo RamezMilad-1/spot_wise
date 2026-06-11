@@ -5,6 +5,7 @@ import '../../core/constants/categories.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/country_flags.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/spots_provider.dart';
 import '../../widgets/max_width.dart';
@@ -69,6 +70,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     label: 'Live spots',
                     icon: Icons.public_rounded,
                     color: AppColors.success,
+                    onTap: () =>
+                        Navigator.pushNamed(context, AppRoutes.adminSpots),
                   ),
                 ],
               ),
@@ -108,6 +111,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 onTap: () =>
                     Navigator.pushNamed(context, AppRoutes.adminCategories),
               ),
+              if (adminP.pending.isNotEmpty) ...[
+                const SectionHeader(title: 'Latest submissions'),
+                for (final spot in adminP.pending.take(4))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    child: SpotListTile(
+                      spot: spot,
+                      subtitleOverride:
+                          'By ${spot.submittedByName} · ${spot.location}',
+                      onTap: () =>
+                          Navigator.pushNamed(context, AppRoutes.adminPending),
+                    ),
+                  ),
+              ],
               const SectionHeader(title: 'Analytics'),
               Row(
                 children: [
@@ -153,21 +172,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ],
                 ),
               ],
-              if (adminP.pending.isNotEmpty) ...[
-                const SectionHeader(title: 'Latest submissions'),
-                for (final spot in adminP.pending.take(4))
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                    ),
-                    child: SpotListTile(
-                      spot: spot,
-                      subtitleOverride:
-                          'By ${spot.submittedByName} · ${spot.location}',
-                      onTap: () =>
-                          Navigator.pushNamed(context, AppRoutes.adminPending),
-                    ),
-                  ),
+              if (adminP.countryBreakdown.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Top countries',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    for (final e in adminP.countryBreakdown.take(6))
+                      Chip(
+                        label: Text(
+                          '${countryFlag(e.key)} ${e.key} · ${e.value}',
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ],
           ),

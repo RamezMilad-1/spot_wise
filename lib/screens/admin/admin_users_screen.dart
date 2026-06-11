@@ -8,9 +8,25 @@ import '../../models/enums.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/badges.dart';
+import '../../widgets/choice_chip_row.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/user_avatar.dart';
+
+/// Quick segments for the user list.
+enum _UserSegment {
+  all,
+  admins,
+  explorers,
+  suspended;
+
+  bool matches(AppUser u) => switch (this) {
+    _UserSegment.all => true,
+    _UserSegment.admins => u.isAdmin,
+    _UserSegment.explorers => !u.isAdmin,
+    _UserSegment.suspended => u.suspended,
+  };
+}
 
 /// Admin user management: search users, promote/demote admins, suspend,
 /// delete, and send notifications (to one user or broadcast to everyone).
@@ -23,6 +39,7 @@ class AdminUsersScreen extends StatefulWidget {
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
   String _query = '';
+  _UserSegment _segment = _UserSegment.all;
 
   @override
   void initState() {
@@ -93,11 +110,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final adminP = context.watch<AdminProvider>();
     final myId = context.read<AuthProvider>().user?.id;
     final q = _query.trim().toLowerCase();
-    final users = q.isEmpty
-        ? adminP.users
-        : adminP.users
-              .where((u) => '${u.name} ${u.email}'.toLowerCase().contains(q))
-              .toList();
+    final users = adminP.users
+        .where(
+          (u) =>
+              _segment.matches(u) &&
+              (q.isEmpty || '${u.name} ${u.email}'.toLowerCase().contains(q)),
+        )
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -113,7 +132,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: TextField(
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search_rounded),
@@ -122,6 +146,32 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               onChanged: (v) => setState(() => _query = v),
             ),
           ),
+          ChoiceChipRow<_UserSegment>(
+            selected: _segment,
+            onSelected: (v) => setState(() => _segment = v),
+            options: [
+              ChipOption(_UserSegment.all, 'All', count: adminP.userCount),
+              ChipOption(
+                _UserSegment.admins,
+                'Admins',
+                count: adminP.adminCount,
+                icon: Icons.verified_user_outlined,
+              ),
+              ChipOption(
+                _UserSegment.explorers,
+                'Explorers',
+                count: adminP.userCount - adminP.adminCount,
+                icon: Icons.explore_outlined,
+              ),
+              ChipOption(
+                _UserSegment.suspended,
+                'Suspended',
+                count: adminP.suspendedCount,
+                icon: Icons.block_rounded,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: adminP.loadingUsers && adminP.users.isEmpty
                 ? const LoadingView()

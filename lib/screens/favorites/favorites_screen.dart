@@ -47,6 +47,7 @@ class FavoritesScreen extends StatelessWidget {
                   return SpotCard(
                     spot: spot,
                     isSaved: true,
+                    heroTag: 'spot-hero-${spot.id}',
                     onToggleSave: () => auth.toggleSave(spot.id),
                     onTap: () => Navigator.pushNamed(
                       context,

@@ -20,6 +20,7 @@ import '../../widgets/glass_icon_button.dart';
 import '../../widgets/network_photo.dart';
 import '../../widgets/rating_stars.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/spot_card.dart';
 import '../../widgets/spot_marker.dart';
 import '../../widgets/user_avatar.dart';
 
@@ -81,13 +82,16 @@ class _SpotDetailsView extends StatelessWidget {
             ),
             actions: [
               Align(
-                child: GlassIconButton(
-                  icon: saved
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  iconColor: saved ? AppColors.coral : AppColors.ink,
-                  tooltip: saved ? 'Saved' : 'Save',
-                  onTap: () => _toggleSave(context, spot.id),
+                child: SaveHeartPop(
+                  saved: saved,
+                  child: GlassIconButton(
+                    icon: saved
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    iconColor: saved ? AppColors.coral : AppColors.ink,
+                    tooltip: saved ? 'Saved' : 'Save',
+                    onTap: () => _toggleSave(context, spot.id),
+                  ),
                 ),
               ),
               const SizedBox(width: 6),
@@ -115,7 +119,10 @@ class _SpotDetailsView extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: _PhotoCarousel(photos: spot.photos),
+              background: Hero(
+                tag: 'spot-hero-${spot.id}',
+                child: _PhotoCarousel(photos: spot.photos),
+              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -152,6 +159,14 @@ class _SpotDetailsView extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (spot.locationNote.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _InfoRow(
+                      icon: Icons.tips_and_updates_outlined,
+                      label: 'Finding it',
+                      value: spot.locationNote,
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.md),
                   Wrap(
                     spacing: AppSpacing.sm,
@@ -192,12 +207,6 @@ class _SpotDetailsView extends StatelessWidget {
                   ],
                   const SizedBox(height: AppSpacing.xl),
                   _MiniMap(spot: spot, onOpen: () => _openInMaps(spot)),
-                  const SizedBox(height: AppSpacing.sm),
-                  AppButton.outline(
-                    'Open in Google Maps',
-                    icon: Icons.directions_rounded,
-                    onPressed: () => _openInMaps(spot),
-                  ),
                 ],
               ),
             ),
@@ -213,6 +222,22 @@ class _SpotDetailsView extends StatelessWidget {
             ),
           ),
           _ReviewsSliver(detailsP: detailsP),
+          if (!detailsP.loading && detailsP.reviews.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                  AppSpacing.lg,
+                  0,
+                ),
+                child: AppButton.outline(
+                  'Write a review',
+                  icon: Icons.rate_review_outlined,
+                  onPressed: () => _writeReview(context),
+                ),
+              ),
+            ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
         ],
       ),
@@ -476,6 +501,16 @@ class _MiniMap extends StatelessWidget {
                 child: InkWell(onTap: onOpen),
               ),
             ),
+            Positioned(
+              right: AppSpacing.sm,
+              bottom: AppSpacing.sm,
+              child: GlassIconButton(
+                icon: Icons.directions_rounded,
+                tooltip: 'Open in Google Maps',
+                style: GlassButtonStyle.dark,
+                onTap: onOpen,
+              ),
+            ),
           ],
         ),
       ),
@@ -639,12 +674,32 @@ class _BottomBar extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: AppButton.outline(
-                  saved ? 'Saved' : 'Save',
-                  icon: saved
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
+                // Raw OutlinedButton instead of AppButton.outline so only the
+                // heart pops (AppButton has no child slot for the icon).
+                child: OutlinedButton(
                   onPressed: onSave,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SaveHeartPop(
+                        saved: saved,
+                        child: Icon(
+                          saved
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          size: 20,
+                          color: saved ? AppColors.coral : null,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          saved ? 'Saved' : 'Save',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),

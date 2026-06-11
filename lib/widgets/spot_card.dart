@@ -9,6 +9,52 @@ import 'glass_icon_button.dart';
 import 'network_photo.dart';
 import 'rating_stars.dart';
 
+/// Scale-pop wrapper for save hearts: replays a quick overshoot bounce
+/// whenever [saved] flips. Purely decorative — no behaviour change.
+class SaveHeartPop extends StatefulWidget {
+  final bool saved;
+  final Widget child;
+  const SaveHeartPop({super.key, required this.saved, required this.child});
+
+  @override
+  State<SaveHeartPop> createState() => _SaveHeartPopState();
+}
+
+class _SaveHeartPopState extends State<SaveHeartPop>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 250),
+  );
+  late final Animation<double> _scale = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.0,
+        end: 1.3,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 45,
+    ),
+    TweenSequenceItem(tween: Tween(begin: 1.3, end: 0.95), weight: 35),
+    TweenSequenceItem(tween: Tween(begin: 0.95, end: 1.0), weight: 20),
+  ]).animate(_controller);
+
+  @override
+  void didUpdateWidget(SaveHeartPop oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.saved != oldWidget.saved) _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      ScaleTransition(scale: _scale, child: widget.child);
+}
+
 /// The vertical feed card — a big photo with a clean details strip below.
 /// Used in the main "Explore" list. Public API unchanged.
 class SpotCard extends StatelessWidget {
@@ -18,6 +64,10 @@ class SpotCard extends StatelessWidget {
   final VoidCallback? onToggleSave;
   final double? distanceMeters;
 
+  /// When set, the card photo flies to the details header sharing this tag.
+  /// Leave null on surfaces where the same spot can appear twice in one route.
+  final String? heroTag;
+
   const SpotCard({
     super.key,
     required this.spot,
@@ -25,11 +75,17 @@ class SpotCard extends StatelessWidget {
     this.isSaved = false,
     this.onToggleSave,
     this.distanceMeters,
+    this.heroTag,
   });
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    Widget photo = AspectRatio(
+      aspectRatio: 4 / 3,
+      child: NetworkPhoto(spot.coverPhoto, width: double.infinity),
+    );
+    if (heroTag != null) photo = Hero(tag: heroTag!, child: photo);
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -38,10 +94,7 @@ class SpotCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                AspectRatio(
-                  aspectRatio: 4 / 3,
-                  child: NetworkPhoto(spot.coverPhoto, width: double.infinity),
-                ),
+                photo,
                 Positioned.fill(
                   child: DecoratedBox(
                     decoration: const BoxDecoration(
@@ -58,13 +111,16 @@ class SpotCard extends StatelessWidget {
                   Positioned(
                     top: AppSpacing.sm,
                     right: AppSpacing.sm,
-                    child: GlassIconButton(
-                      icon: isSaved
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      iconColor: isSaved ? AppColors.coral : AppColors.ink,
-                      onTap: onToggleSave,
-                      tooltip: isSaved ? 'Saved' : 'Save',
+                    child: SaveHeartPop(
+                      saved: isSaved,
+                      child: GlassIconButton(
+                        icon: isSaved
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        iconColor: isSaved ? AppColors.coral : AppColors.ink,
+                        onTap: onToggleSave,
+                        tooltip: isSaved ? 'Saved' : 'Save',
+                      ),
                     ),
                   ),
                 Positioned(
@@ -193,13 +249,16 @@ class SpotOverlayCard extends StatelessWidget {
               Positioned(
                 top: AppSpacing.sm,
                 right: AppSpacing.sm,
-                child: GlassIconButton(
-                  icon: isSaved
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  iconColor: isSaved ? AppColors.coral : AppColors.ink,
-                  onTap: onToggleSave,
-                  tooltip: isSaved ? 'Saved' : 'Save',
+                child: SaveHeartPop(
+                  saved: isSaved,
+                  child: GlassIconButton(
+                    icon: isSaved
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    iconColor: isSaved ? AppColors.coral : AppColors.ink,
+                    onTap: onToggleSave,
+                    tooltip: isSaved ? 'Saved' : 'Save',
+                  ),
                 ),
               ),
             Positioned(

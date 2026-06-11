@@ -54,6 +54,28 @@ class AdminProvider extends ChangeNotifier {
     return entries;
   }
 
+  /// Approved-spot counts per country, highest first — for the dashboard
+  /// analytics. Grouped case-insensitively (user-submitted spots may type
+  /// "germany"), labelled with each group's most common spelling.
+  List<MapEntry<String, int>> get countryBreakdown {
+    final counts = <String, int>{};
+    final variants = <String, Map<String, int>>{};
+    for (final s in _allSpots.where((s) => s.status == SpotStatus.approved)) {
+      final name = s.country.trim();
+      if (name.isEmpty) continue;
+      final key = name.toLowerCase();
+      counts[key] = (counts[key] ?? 0) + 1;
+      final v = variants.putIfAbsent(key, () => {});
+      v[name] = (v[name] ?? 0) + 1;
+    }
+    final entries = counts.entries.map((e) {
+      final best = variants[e.key]!.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      return MapEntry(best.first.key, e.value);
+    }).toList()..sort((a, b) => b.value.compareTo(a.value));
+    return entries;
+  }
+
   Future<void> load() async {
     _loading = true;
     notifyListeners();

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/error_handler.dart';
+import '../../core/utils/formatters.dart';
 import '../../core/utils/validators.dart';
 import '../../models/enums.dart';
 import '../../models/spot.dart';
@@ -15,6 +17,7 @@ import '../../services/service_locator.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/feedback.dart';
+import '../../widgets/map_location_picker.dart';
 import '../../widgets/photo_picker.dart';
 
 /// Create a new spot, or — when [existing] is provided — edit one. New spots
@@ -36,6 +39,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final _country = TextEditingController();
   final _bestTime = TextEditingController();
   final _tags = TextEditingController();
+  final _locationNote = TextEditingController();
+  final _cityFocus = FocusNode();
+  final _countryFocus = FocusNode();
 
   String _categoryId = '';
   PriceRange _price = PriceRange.moderate;
@@ -66,6 +72,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       _country.text = s.country;
       _bestTime.text = s.bestTimeToVisit;
       _tags.text = s.tags.join(', ');
+      _locationNote.text = s.locationNote;
       _categoryId = s.categoryId;
       _price = s.priceRange;
       _isFree = s.isFree;
@@ -88,7 +95,30 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     _country.dispose();
     _bestTime.dispose();
     _tags.dispose();
+    _locationNote.dispose();
+    _cityFocus.dispose();
+    _countryFocus.dispose();
     super.dispose();
+  }
+
+  /// Reverse-geocodes a freshly placed pin and fills the city/country fields
+  /// — but only the empty ones, never overwriting what the user typed.
+  Future<void> _autofillPlace(double lat, double lng) async {
+    if (_city.text.trim().isNotEmpty && _country.text.trim().isNotEmpty) {
+      return;
+    }
+    final place = await services.geocoding.reverse(lat, lng);
+    if (place == null || !mounted) return;
+    setState(() {
+      if (_city.text.trim().isEmpty &&
+          place.name.isNotEmpty &&
+          place.name != place.country) {
+        _city.text = place.name;
+      }
+      if (_country.text.trim().isEmpty && place.country.isNotEmpty) {
+        _country.text = place.country;
+      }
+    });
   }
 
   Future<void> _captureLocation() async {
@@ -107,6 +137,31 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         context,
         'Couldn\'t read GPS. You can still submit — admins will verify the location.',
       );
+    } else if (loc != null) {
+      await _autofillPlace(loc.latitude, loc.longitude);
+    }
+  }
+
+  Future<void> _pickOnMap() async {
+    final hasCoords = _lat != null && _lng != null;
+    final result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapLocationPicker(
+          initialCenter: hasCoords
+              ? LatLng(_lat!, _lng!)
+              : LocationService.fallbackCenter,
+          initialZoom: hasCoords ? 15 : 12,
+          categoryId: _categoryId,
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _lat = result.latitude;
+        _lng = result.longitude;
+      });
+      await _autofillPlace(result.latitude, result.longitude);
     }
   }
 
@@ -130,8 +185,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         final updated = widget.existing!.copyWith(
           name: _name.text.trim(),
           description: _description.text.trim(),
-          country: _country.text.trim(),
-          city: _city.text.trim(),
+          country: Formatters.placeName(_country.text),
+          city: Formatters.placeName(_city.text),
           categoryId: _categoryId,
           lat: _lat,
           lng: _lng,
@@ -141,6 +196,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           familyFriendly: _family,
           hiddenGem: _hiddenGem,
           bestTimeToVisit: _bestTime.text.trim(),
+          locationNote: _locationNote.text.trim(),
           tags: tags,
           // Admins can also move status / verified / featured.
           status: isAdmin ? _status : null,
@@ -157,8 +213,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           id: '',
           name: _name.text.trim(),
           description: _description.text.trim(),
-          country: _country.text.trim(),
-          city: _city.text.trim(),
+          country: Formatters.placeName(_country.text),
+          city: Formatters.placeName(_city.text),
           categoryId: _categoryId,
           lat: _lat ?? LocationService.fallbackCenter.latitude,
           lng: _lng ?? LocationService.fallbackCenter.longitude,
@@ -168,6 +224,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           familyFriendly: _family,
           hiddenGem: _hiddenGem,
           bestTimeToVisit: _bestTime.text.trim(),
+          locationNote: _locationNote.text.trim(),
           tags: tags,
           status: SpotStatus.pending,
           verified: false,
@@ -238,7 +295,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               photos: _photos,
               onChanged: (p) => setState(() => _photos = p),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.xl),
+            Text('Basics', style: text.labelLarge),
+            const SizedBox(height: AppSpacing.sm),
             AppTextField(
               controller: _name,
               label: 'Name',
@@ -272,25 +331,63 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               ],
               onChanged: (v) => setState(() => _categoryId = v ?? _categoryId),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _city,
-                    label: 'City',
-                    validator: (v) => Validators.required(v, 'City'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: AppTextField(
-                    controller: _country,
-                    label: 'Country',
-                    validator: (v) => Validators.required(v, 'Country'),
-                  ),
-                ),
-              ],
+            const SizedBox(height: AppSpacing.xl),
+            Text('Location', style: text.labelLarge),
+            const SizedBox(height: AppSpacing.sm),
+            Builder(
+              builder: (context) {
+                final spotsP = context.watch<SpotsProvider>();
+                List<String> filter(Iterable<String> all, String q) {
+                  final query = q.trim().toLowerCase();
+                  return all
+                      .where(
+                        (o) =>
+                            query.isEmpty || o.toLowerCase().contains(query),
+                      )
+                      .toList();
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _PlaceAutocompleteField(
+                        controller: _city,
+                        focusNode: _cityFocus,
+                        label: 'City',
+                        validator: (v) => Validators.required(v, 'City'),
+                        optionsFor: (q) {
+                          // Cities of the typed country when it's known,
+                          // otherwise every city in the data.
+                          final typed = _country.text.trim().toLowerCase();
+                          final known = spotsP.countryCounts.where(
+                            (e) => e.key.toLowerCase() == typed,
+                          );
+                          final cities = known.isNotEmpty
+                              ? spotsP
+                                    .cityCountsFor(known.first.key)
+                                    .map((e) => e.key)
+                              : spotsP.cities;
+                          return filter(cities, q);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _PlaceAutocompleteField(
+                        controller: _country,
+                        focusNode: _countryFocus,
+                        label: 'Country',
+                        validator: (v) => Validators.required(v, 'Country'),
+                        optionsFor: (q) => filter(
+                          spotsP.countryCounts.map((e) => e.key),
+                          q,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: AppSpacing.lg),
             _LocationCard(
@@ -298,8 +395,17 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               lng: _lng,
               capturing: _capturing,
               onCapture: _captureLocation,
+              onPickOnMap: _pickOnMap,
             ),
             const SizedBox(height: AppSpacing.lg),
+            AppTextField(
+              controller: _locationNote,
+              label: 'How to find it (optional)',
+              hint: 'e.g. Behind the blue gate, ask for Abu Karim',
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text('Details', style: text.labelLarge),
+            const SizedBox(height: AppSpacing.sm),
             DropdownButtonFormField<PriceRange>(
               initialValue: _price,
               decoration: const InputDecoration(labelText: 'Price range'),
@@ -391,12 +497,14 @@ class _LocationCard extends StatelessWidget {
   final double? lng;
   final bool capturing;
   final VoidCallback onCapture;
+  final VoidCallback onPickOnMap;
 
   const _LocationCard({
     required this.lat,
     required this.lng,
     required this.capturing,
     required this.onCapture,
+    required this.onPickOnMap,
   });
 
   @override
@@ -409,40 +517,116 @@ class _LocationCard extends StatelessWidget {
         borderRadius: AppRadius.brLg,
         color: scheme.surfaceContainerHighest,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            has ? Icons.location_on_rounded : Icons.location_off_outlined,
-            color: has ? AppColors.success : scheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Location', style: Theme.of(context).textTheme.titleSmall),
-                Text(
-                  has
-                      ? '${lat!.toStringAsFixed(4)}, ${lng!.toStringAsFixed(4)}'
-                      : 'Capture the spot\'s GPS coordinates',
-                  style: Theme.of(context).textTheme.bodySmall,
+          Row(
+            children: [
+              Icon(
+                has ? Icons.location_on_rounded : Icons.location_off_outlined,
+                color: has ? AppColors.success : scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'GPS coordinates',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    Text(
+                      has
+                          ? '${lat!.toStringAsFixed(4)}, ${lng!.toStringAsFixed(4)}'
+                          : 'Capture your position or pick on the map',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          TextButton.icon(
-            onPressed: capturing ? null : onCapture,
-            icon: capturing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.my_location_rounded, size: 18),
-            label: Text(has ? 'Update' : 'Capture'),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: capturing ? null : onCapture,
+                icon: capturing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location_rounded, size: 18),
+                label: Text(has ? 'Update' : 'Capture'),
+              ),
+              TextButton.icon(
+                onPressed: onPickOnMap,
+                icon: const Icon(Icons.map_outlined, size: 18),
+                label: const Text('Pick on map'),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+/// City/country input with suggestions from the places already in the data —
+/// keeps user-typed locations consistent ("Berlin", not "berlin"/"Berln").
+class _PlaceAutocompleteField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String label;
+  final String? Function(String?) validator;
+  final List<String> Function(String query) optionsFor;
+
+  const _PlaceAutocompleteField({
+    required this.controller,
+    required this.focusNode,
+    required this.label,
+    required this.validator,
+    required this.optionsFor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RawAutocomplete<String>(
+      textEditingController: controller,
+      focusNode: focusNode,
+      optionsBuilder: (value) => optionsFor(value.text),
+      optionsViewBuilder: (context, onSelected, options) => Align(
+        alignment: Alignment.topLeft,
+        child: Material(
+          elevation: 4,
+          borderRadius: AppRadius.brMd,
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 220, maxWidth: 260),
+            child: ListView(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              children: [
+                for (final option in options)
+                  ListTile(
+                    dense: true,
+                    title: Text(option),
+                    onTap: () => onSelected(option),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      fieldViewBuilder: (context, textController, fieldFocus, onSubmit) =>
+          AppTextField(
+            controller: textController,
+            focusNode: fieldFocus,
+            label: label,
+            validator: validator,
+          ),
     );
   }
 }

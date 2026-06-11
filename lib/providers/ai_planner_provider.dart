@@ -54,6 +54,16 @@ class AiPlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Pre-fills the brief from elsewhere in the app (e.g. the home page's
+  /// "Plan a trip to …" banner).
+  void prefillDestination({required String destination, String country = ''}) {
+    this.destination = destination;
+    this.country = country;
+    lat = null;
+    lng = null;
+    notifyListeners();
+  }
+
   void setDestinationFromPlace(GeoResult place) {
     destination = place.name;
     country = place.country;

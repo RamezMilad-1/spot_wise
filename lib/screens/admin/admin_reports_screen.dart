@@ -9,10 +9,18 @@ import '../../models/enums.dart';
 import '../../models/report.dart';
 import '../../providers/admin_provider.dart';
 import '../../services/service_locator.dart';
+import '../../widgets/choice_chip_row.dart';
 import '../../widgets/state_views.dart';
 
-class AdminReportsScreen extends StatelessWidget {
+class AdminReportsScreen extends StatefulWidget {
   const AdminReportsScreen({super.key});
+
+  @override
+  State<AdminReportsScreen> createState() => _AdminReportsScreenState();
+}
+
+class _AdminReportsScreenState extends State<AdminReportsScreen> {
+  ReportStatus? _status;
 
   Future<void> _viewSpot(BuildContext context, Report report) async {
     final spot = await services.backend.getSpot(report.spotId);
@@ -24,36 +32,74 @@ class AdminReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adminP = context.watch<AdminProvider>();
+    final all = adminP.reports;
+    // Open reports first, newest first within each group.
+    final reports =
+        all.where((r) => _status == null || r.status == _status).toList()
+          ..sort((a, b) {
+            final aOpen = a.status == ReportStatus.open ? 0 : 1;
+            final bOpen = b.status == ReportStatus.open ? 0 : 1;
+            if (aOpen != bOpen) return aOpen.compareTo(bOpen);
+            return b.createdAt.compareTo(a.createdAt);
+          });
+
+    int byStatus(ReportStatus s) => all.where((r) => r.status == s).length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reports')),
-      body: adminP.loading && adminP.reports.isEmpty
+      body: adminP.loading && all.isEmpty
           ? const LoadingView()
-          : adminP.reports.isEmpty
+          : all.isEmpty
           ? const EmptyView(
               icon: Icons.flag_outlined,
               title: 'No reports',
               message: 'Reported spots will appear here for review.',
             )
-          : RefreshIndicator(
-              onRefresh: () => adminP.load(),
-              child: ListView.separated(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                itemCount: adminP.reports.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: AppSpacing.md),
-                itemBuilder: (_, i) {
-                  final r = adminP.reports[i];
-                  return _ReportCard(
-                    report: r,
-                    onView: () => _viewSpot(context, r),
-                    onDismiss: () =>
-                        adminP.resolveReport(r, ReportStatus.dismissed),
-                    onAction: () =>
-                        adminP.resolveReport(r, ReportStatus.reviewed),
-                  );
-                },
-              ),
+          : Column(
+              children: [
+                const SizedBox(height: AppSpacing.md),
+                ChoiceChipRow<ReportStatus?>(
+                  selected: _status,
+                  onSelected: (v) => setState(() => _status = v),
+                  options: [
+                    ChipOption(null, 'All', count: all.length),
+                    for (final s in ReportStatus.values)
+                      ChipOption(s, s.label, count: byStatus(s)),
+                  ],
+                ),
+                Expanded(
+                  child: reports.isEmpty
+                      ? const EmptyView(
+                          icon: Icons.filter_alt_off_rounded,
+                          title: 'Nothing here',
+                          message: 'No reports with this status.',
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () => adminP.load(),
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            itemCount: reports.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: AppSpacing.md),
+                            itemBuilder: (_, i) {
+                              final r = reports[i];
+                              return _ReportCard(
+                                report: r,
+                                onView: () => _viewSpot(context, r),
+                                onDismiss: () => adminP.resolveReport(
+                                  r,
+                                  ReportStatus.dismissed,
+                                ),
+                                onAction: () => adminP.resolveReport(
+                                  r,
+                                  ReportStatus.reviewed,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                ),
+              ],
             ),
     );
   }

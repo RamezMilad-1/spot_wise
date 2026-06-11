@@ -75,6 +75,12 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
     final spotsP = context.watch<SpotsProvider>();
     final text = Theme.of(context).textTheme;
 
+    // Typing keeps these equal via onChanged, so a mismatch only means the
+    // destination was pre-filled from outside (home's "Plan a trip" banner).
+    if (_destination.text != aiP.destination) {
+      _destination.text = aiP.destination;
+    }
+
     return Scaffold(
       appBar: AppBar(
         leading: const AppMenuButton(),

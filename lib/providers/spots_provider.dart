@@ -85,6 +85,49 @@ class SpotsProvider extends ChangeNotifier {
     return list;
   }
 
+  /// Countries present in the data with their spot counts, A–Z —
+  /// powers the home destination picker.
+  List<MapEntry<String, int>> get countryCounts =>
+      _groupedCounts(_spots.map((s) => s.country));
+
+  /// Cities within [country] with their spot counts, A–Z.
+  List<MapEntry<String, int>> cityCountsFor(String country) {
+    final key = country.trim().toLowerCase();
+    return _groupedCounts(
+      _spots
+          .where((s) => s.country.trim().toLowerCase() == key)
+          .map((s) => s.city),
+    );
+  }
+
+  /// Groups names case-insensitively (user-submitted spots may type
+  /// "germany"), labelling each group with its most common spelling.
+  List<MapEntry<String, int>> _groupedCounts(Iterable<String> names) {
+    final counts = <String, int>{};
+    final variants = <String, Map<String, int>>{};
+    for (final raw in names) {
+      final name = raw.trim();
+      if (name.isEmpty) continue;
+      final key = name.toLowerCase();
+      counts[key] = (counts[key] ?? 0) + 1;
+      final v = variants.putIfAbsent(key, () => {});
+      v[name] = (v[name] ?? 0) + 1;
+    }
+    String display(String key) {
+      final v = variants[key]!.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      return v.first.key;
+    }
+
+    final entries = counts.entries
+        .map((e) => MapEntry(display(e.key), e.value))
+        .toList()
+      ..sort(
+        (a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()),
+      );
+    return entries;
+  }
+
   List<Spot> byCategory(String categoryId) =>
       _spots.where((s) => s.categoryId == categoryId).toList();
 

@@ -89,7 +89,9 @@ class _MapScreenState extends State<MapScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate: AppConfig.osmTileUrl,
+                urlTemplate: Theme.of(context).brightness == Brightness.dark
+                    ? AppConfig.osmTileUrlDark
+                    : AppConfig.osmTileUrl,
                 userAgentPackageName: AppConfig.osmUserAgent,
                 maxZoom: 19,
               ),
@@ -115,6 +117,17 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ],
+          ),
+          // CARTO requires visible attribution wherever its tiles are shown.
+          Positioned(
+            left: AppSpacing.md,
+            bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.xs,
+            child: IgnorePointer(
+              child: Text(
+                '© OpenStreetMap © CARTO',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
           ),
           SafeArea(
             child: Padding(

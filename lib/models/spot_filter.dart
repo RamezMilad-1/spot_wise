@@ -7,6 +7,12 @@ import 'spot.dart';
 /// [copyWith] to derive a new filter.
 class SpotFilter {
   final String query;
+
+  /// Destination filter — empty string means "anywhere". [city] is only
+  /// meaningful when [country] is set (the pickers enforce the cascade).
+  final String country;
+  final String city;
+
   final Set<String> categoryIds;
   final double minRating;
   final Set<PriceRange> priceRanges;
@@ -17,6 +23,8 @@ class SpotFilter {
 
   const SpotFilter({
     this.query = '',
+    this.country = '',
+    this.city = '',
     this.categoryIds = const {},
     this.minRating = 0,
     this.priceRanges = const {},
@@ -28,6 +36,8 @@ class SpotFilter {
 
   bool get isActive =>
       query.isNotEmpty ||
+      country.isNotEmpty ||
+      city.isNotEmpty ||
       categoryIds.isNotEmpty ||
       minRating > 0 ||
       priceRanges.isNotEmpty ||
@@ -36,6 +46,8 @@ class SpotFilter {
       hiddenGemOnly ||
       maxDistanceKm != null;
 
+  /// Count of filters managed by the filter *sheet* (badge on the tune
+  /// button). Destination (country/city) has its own picker, so it's excluded.
   int get activeCount => [
     categoryIds.isNotEmpty,
     minRating > 0,
@@ -48,6 +60,9 @@ class SpotFilter {
 
   static const Distance _distance = Distance();
 
+  static bool _sameName(String a, String b) =>
+      a.trim().toLowerCase() == b.trim().toLowerCase();
+
   bool matches(Spot spot, {LatLng? origin}) {
     if (query.isNotEmpty) {
       final q = query.toLowerCase();
@@ -56,6 +71,9 @@ class SpotFilter {
               .toLowerCase();
       if (!hay.contains(q)) return false;
     }
+    // Case-insensitive: user-submitted spots may type "germany".
+    if (country.isNotEmpty && !_sameName(spot.country, country)) return false;
+    if (city.isNotEmpty && !_sameName(spot.city, city)) return false;
     if (categoryIds.isNotEmpty && !categoryIds.contains(spot.categoryId)) {
       return false;
     }
@@ -75,6 +93,8 @@ class SpotFilter {
 
   SpotFilter copyWith({
     String? query,
+    String? country,
+    String? city,
     Set<String>? categoryIds,
     double? minRating,
     Set<PriceRange>? priceRanges,
@@ -86,6 +106,8 @@ class SpotFilter {
   }) {
     return SpotFilter(
       query: query ?? this.query,
+      country: country ?? this.country,
+      city: city ?? this.city,
       categoryIds: categoryIds ?? this.categoryIds,
       minRating: minRating ?? this.minRating,
       priceRanges: priceRanges ?? this.priceRanges,

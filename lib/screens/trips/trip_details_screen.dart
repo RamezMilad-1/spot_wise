@@ -267,19 +267,38 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 ),
                 child: TripBudgetCard(trip: trip),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: TextField(
-                  controller: _notes,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'Trip notes',
-                    hintText: 'Flights, hotel, anything to remember…',
-                  ),
-                  onChanged: (v) => _debouncer.run(() {
-                    context.read<TripsProvider>().updateNotes(_trip, v);
-                  }),
+              ExpansionTile(
+                maintainState: true,
+                initiallyExpanded: trip.notes.isNotEmpty,
+                shape: const Border(),
+                collapsedShape: const Border(),
+                tilePadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
                 ),
+                childrenPadding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                ),
+                leading: Icon(
+                  Icons.notes_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                title: Text('Notes', style: text.titleSmall),
+                children: [
+                  TextField(
+                    controller: _notes,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Trip notes',
+                      hintText: 'Flights, hotel, anything to remember…',
+                    ),
+                    onChanged: (v) => _debouncer.run(() {
+                      context.read<TripsProvider>().updateNotes(_trip, v);
+                    }),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.lg),
               for (final day in trip.days)

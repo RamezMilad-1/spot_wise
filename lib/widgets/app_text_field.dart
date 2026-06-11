@@ -20,6 +20,7 @@ class AppTextField extends StatefulWidget {
   final Widget? suffix;
   final bool enabled;
   final bool autofocus;
+  final FocusNode? focusNode;
 
   const AppTextField({
     super.key,
@@ -37,6 +38,7 @@ class AppTextField extends StatefulWidget {
     this.suffix,
     this.enabled = true,
     this.autofocus = false,
+    this.focusNode,
   });
 
   @override
@@ -58,6 +60,7 @@ class _AppTextFieldState extends State<AppTextField> {
         ],
         TextFormField(
           controller: widget.controller,
+          focusNode: widget.focusNode,
           obscureText: _obscured,
           keyboardType: widget.keyboardType,
           validator: widget.validator,

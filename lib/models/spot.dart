@@ -23,6 +23,7 @@ class Spot {
   final bool hiddenGem;
   final bool featured;
   final String bestTimeToVisit;
+  final String locationNote;
   final List<String> tags;
   final SpotStatus status;
   final bool verified;
@@ -52,6 +53,7 @@ class Spot {
     this.hiddenGem = false,
     this.featured = false,
     this.bestTimeToVisit = '',
+    this.locationNote = '',
     this.tags = const [],
     this.status = SpotStatus.pending,
     this.verified = false,
@@ -89,6 +91,7 @@ class Spot {
       hiddenGem: JsonUtils.asBool(json['hiddenGem']),
       featured: JsonUtils.asBool(json['featured']),
       bestTimeToVisit: JsonUtils.asString(json['bestTimeToVisit']),
+      locationNote: JsonUtils.asString(json['locationNote']),
       tags: JsonUtils.asStringList(json['tags']),
       status: SpotStatus.fromString(JsonUtils.asStringOrNull(json['status'])),
       verified: JsonUtils.asBool(json['verified']),
@@ -119,6 +122,7 @@ class Spot {
     'hiddenGem': hiddenGem,
     'featured': featured,
     'bestTimeToVisit': bestTimeToVisit,
+    'locationNote': locationNote,
     'tags': tags,
     'status': status.value,
     'verified': verified,
@@ -148,6 +152,7 @@ class Spot {
     bool? hiddenGem,
     bool? featured,
     String? bestTimeToVisit,
+    String? locationNote,
     List<String>? tags,
     SpotStatus? status,
     bool? verified,
@@ -174,6 +179,7 @@ class Spot {
       hiddenGem: hiddenGem ?? this.hiddenGem,
       featured: featured ?? this.featured,
       bestTimeToVisit: bestTimeToVisit ?? this.bestTimeToVisit,
+      locationNote: locationNote ?? this.locationNote,
       tags: tags ?? this.tags,
       status: status ?? this.status,
       verified: verified ?? this.verified,
