@@ -45,29 +45,34 @@ class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
     );
   }
 
-  /// Asks the AI for a replacement for one stop; the rest of the day re-flows
-  /// around whatever it picks.
+  /// Asks the AI for a replacement for one stop, optionally steered by a typed
+  /// note; the rest of the day re-flows around whatever it picks.
   Future<void> _swap(int dayIndex, int stopIndex) async {
+    final note = await showSwapNoteSheet(context);
+    if (note == null || !mounted) return; // cancelled
     final aiP = context.read<AiPlannerProvider>();
     final spots = context.read<SpotsProvider>().spots;
-    final before = _trip.days[dayIndex].stops[stopIndex];
-    final updated = await aiP.replaceStop(
+    final result = await aiP.replaceStop(
       trip: _trip,
       dayIndex: dayIndex,
       stopIndex: stopIndex,
       spots: spots,
+      prompt: note,
     );
     if (!mounted) return;
-    if (updated == null) {
+    if (result == null) {
       AppSnackbar.error(context, aiP.error ?? 'Couldn\'t swap that stop.');
       return;
     }
-    final after = updated.days[dayIndex].stops[stopIndex];
-    if (after.spotId == before.spotId) {
-      AppSnackbar.show(context, 'No other nearby spots to swap in.');
+    if (!result.swapped) {
+      AppSnackbar.show(
+        context,
+        result.message ?? 'No other nearby spots to swap in.',
+      );
       return;
     }
-    setState(() => _trip = updated);
+    setState(() => _trip = result.trip);
+    final after = result.trip.days[dayIndex].stops[stopIndex];
     AppSnackbar.success(context, 'Swapped in “${after.name}”.');
   }
 

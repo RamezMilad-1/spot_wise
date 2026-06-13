@@ -67,20 +67,36 @@ int _editDistance(String a, String b, int cap) {
   return prev[b.length];
 }
 
-/// Bottom-sheet spot search: type a name, get up to five suggestions, tap one.
-/// Pops with the chosen [Spot] or null.
-Future<Spot?> showSpotSearch(BuildContext context, {required List<Spot> spots}) {
+/// Bottom-sheet spot search: type a name, get suggestions, tap one. Pops with
+/// the chosen [Spot] or null.
+///
+/// With [browseAll] the sheet also lists every passed spot while the query is
+/// empty (a browse-and-search picker) and returns more matches when typing —
+/// used by the trip editor's "Add a spot" / "Replace by search".
+Future<Spot?> showSpotSearch(
+  BuildContext context, {
+  required List<Spot> spots,
+  String title = 'Find a spot',
+  bool browseAll = false,
+}) {
   return showModalBottomSheet<Spot>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => _SpotSearchSheet(spots: spots),
+    builder: (_) =>
+        _SpotSearchSheet(spots: spots, title: title, browseAll: browseAll),
   );
 }
 
 class _SpotSearchSheet extends StatefulWidget {
   final List<Spot> spots;
-  const _SpotSearchSheet({required this.spots});
+  final String title;
+  final bool browseAll;
+  const _SpotSearchSheet({
+    required this.spots,
+    this.title = 'Find a spot',
+    this.browseAll = false,
+  });
 
   @override
   State<_SpotSearchSheet> createState() => _SpotSearchSheetState();
@@ -99,7 +115,11 @@ class _SpotSearchSheetState extends State<_SpotSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final results = searchSpots(widget.spots, _query);
+    final empty = _query.trim().isEmpty;
+    // Browse the whole list while empty (browseAll), otherwise rank matches.
+    final results = empty
+        ? (widget.browseAll ? widget.spots : const <Spot>[])
+        : searchSpots(widget.spots, _query, limit: widget.browseAll ? 50 : 5);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
@@ -120,31 +140,26 @@ class _SpotSearchSheetState extends State<_SpotSearchSheet> {
                   AppSpacing.xl,
                   AppSpacing.sm,
                 ),
-                child: Text('Find a spot', style: text.titleLarge),
+                child: Text(widget.title, style: text.titleLarge),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: AppSearchField(
                   controller: _controller,
                   hint: 'Type a spot name…',
-                  autofocus: true,
+                  // Don't grab the keyboard when there's a list to browse first.
+                  autofocus: !widget.browseAll,
                   onChanged: (v) => setState(() => _query = v),
                 ),
               ),
               Flexible(
-                child: _query.trim().isEmpty
+                child: results.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         child: Text(
-                          'Start typing — even part of a name works.',
-                          style: text.bodySmall,
-                        ),
-                      )
-                    : results.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Text(
-                          'No spots match “${_query.trim()}”.',
+                          empty
+                              ? 'Start typing — even part of a name works.'
+                              : 'No spots match “${_query.trim()}”.',
                           style: text.bodyMedium,
                         ),
                       )

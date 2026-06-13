@@ -160,13 +160,46 @@ class LocalItineraryGenerator {
     return Categories.labelFor(s.categoryId);
   }
 
+  /// Tiny stop-word list so a free-text wish like "a spot with good arabic
+  /// food" keys off "arabic"/"food" rather than the filler words.
+  static const Set<String> _wishStopWords = {
+    'the', 'and', 'for', 'with', 'good', 'great', 'best', 'nice', 'some',
+    'that', 'this', 'have', 'has', 'want', 'need', 'like', 'spot', 'spots',
+    'place', 'places', 'near', 'nearby', 'around', 'something', 'somewhere',
+    'really', 'very', 'more', 'food',
+  };
+
   /// Offline fallback for the AI stop swap: the best-rated candidate, with a
   /// nudge for staying close to the rejected stop and matching its category.
+  ///
+  /// When [prompt] is set it first keeps only candidates whose name/tags/
+  /// category/description mention the wish's keywords; if none do, it returns
+  /// null so the caller can tell the traveller nothing nearby matches.
   Spot? pickReplacement({
     required TripStop reject,
     required List<Spot> candidates,
+    String prompt = '',
   }) {
     if (candidates.isEmpty) return null;
+
+    var pool = candidates;
+    final terms = prompt
+        .toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((w) => w.length > 2 && !_wishStopWords.contains(w))
+        .toSet();
+    if (terms.isNotEmpty) {
+      final matched = candidates.where((s) {
+        final hay =
+            '${s.name} ${s.tags.join(' ')} '
+                    '${Categories.labelFor(s.categoryId)} ${s.description}'
+                .toLowerCase();
+        return terms.any(hay.contains);
+      }).toList();
+      if (matched.isEmpty) return null;
+      pool = matched;
+    }
+
     int score(Spot s) {
       var sc = (s.rating * 10).round();
       if (s.categoryId == reject.categoryId) sc += 8;
@@ -179,8 +212,7 @@ class LocalItineraryGenerator {
       return sc;
     }
 
-    final sorted = [...candidates]
-      ..sort((a, b) => score(b).compareTo(score(a)));
+    final sorted = [...pool]..sort((a, b) => score(b).compareTo(score(a)));
     return sorted.first;
   }
 

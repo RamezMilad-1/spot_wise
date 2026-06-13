@@ -62,16 +62,21 @@ class GeminiAiService implements AiService {
   }
 
   @override
-  Future<Trip> replaceStop({
+  Future<StopSwapResult> replaceStop({
     required Trip trip,
     required int dayIndex,
     required int stopIndex,
     required List<Spot> spots,
     String notes = '',
+    String prompt = '',
   }) async {
-    if (dayIndex < 0 || dayIndex >= trip.days.length) return trip;
+    if (dayIndex < 0 || dayIndex >= trip.days.length) {
+      return StopSwapResult.unchanged(trip);
+    }
     final day = trip.days[dayIndex];
-    if (stopIndex < 0 || stopIndex >= day.stops.length) return trip;
+    if (stopIndex < 0 || stopIndex >= day.stops.length) {
+      return StopSwapResult.unchanged(trip);
+    }
     final reject = day.stops[stopIndex];
 
     final usedIds = trip.days.expand((d) => d.stops).map((s) => s.spotId).toSet();
@@ -80,25 +85,54 @@ class GeminiAiService implements AiService {
       spots.where((s) => s.status == SpotStatus.approved),
       usedIds,
     );
-    if (candidates.isEmpty) return trip;
+    if (candidates.isEmpty) {
+      return StopSwapResult.unchanged(
+        trip,
+        message: 'No other nearby spots to swap in.',
+      );
+    }
 
+    final wish = prompt.trim();
     Spot? choice;
     var note = '';
     if (AppConfig.hasGemini) {
       try {
         final text = await _generate(
-          _buildReplacePrompt(trip, day, reject, candidates, notes),
+          _buildReplacePrompt(trip, day, reject, candidates, notes, wish),
         );
         final parsed = jsonDecode(text) as Map<String, dynamic>;
+        final id = JsonUtils.asString(parsed['spotId']);
+        if (id.isEmpty) {
+          // The model decided no alternative satisfies the request.
+          final reason = JsonUtils.asString(parsed['reason']);
+          return StopSwapResult.unchanged(
+            trip,
+            message: reason.isNotEmpty
+                ? reason
+                : 'Nothing nearby matches that request.',
+          );
+        }
         final byId = {for (final s in candidates) s.id: s};
-        choice = byId[JsonUtils.asString(parsed['spotId'])];
+        choice = byId[id];
         note = JsonUtils.asString(parsed['note']);
       } catch (_) {
         // Fall through to the local pick below.
       }
     }
-    choice ??= _fallback.pickReplacement(reject: reject, candidates: candidates);
-    if (choice == null) return trip;
+    if (choice == null) {
+      choice = _fallback.pickReplacement(
+        reject: reject,
+        candidates: candidates,
+        prompt: wish,
+      );
+      if (choice == null) {
+        // Only reachable when a wish was set and nothing local matched it.
+        return StopSwapResult.unchanged(
+          trip,
+          message: 'Couldn\'t find a nearby spot matching “$wish”.',
+        );
+      }
+    }
     if (note.isEmpty) note = _fallback.noteFor(choice);
 
     final newStop = TripStop(
@@ -126,10 +160,13 @@ class GeminiAiService implements AiService {
       newDays,
       gapMinutes: trip.restMinutes,
     );
-    return trip.copyWith(
-      days: scheduled,
-      estimatedCost:
-          trip.estimatedCost - reject.estimatedCost + newStop.estimatedCost,
+    return StopSwapResult(
+      swapped: true,
+      trip: trip.copyWith(
+        days: scheduled,
+        estimatedCost:
+            trip.estimatedCost - reject.estimatedCost + newStop.estimatedCost,
+      ),
     );
   }
 
@@ -271,6 +308,7 @@ JSON rules:
     TripStop reject,
     List<Spot> candidates,
     String notes,
+    String wish,
   ) {
     final date = day.date != null
         ? DateFormat('EEEE, MMM d').format(day.date!)
@@ -291,13 +329,13 @@ You are SpotWise's veteran local tour guide for ${trip.destination}. A traveller
 
 THE DAY ($date — "${day.title.isEmpty ? 'Day ${day.dayNumber}' : day.title}"):
 $dayLines
-${trimmedNotes.isEmpty ? '' : '\nTraveller\'s original requests to keep respecting: "$trimmedNotes"\n'}
+${trimmedNotes.isEmpty ? '' : '\nTraveller\'s original requests to keep respecting: "$trimmedNotes"\n'}${wish.isEmpty ? '' : '\nFor THIS replacement the traveller specifically asked for: "$wish" — treat it as a hard requirement.\n'}
 ALTERNATIVES — choose exactly ONE by its exact id (never a spot already in the plan):
 $candidateLines
 
-Choose the alternative that best keeps the day's route efficient (close to the stops before and after the empty slot), suits that time of day, and has strong ratings.
-
-Return STRICT JSON only: {"spotId":"<exact id>","note":"one specific practical tip, 12 words max"}
+Choose the alternative that best keeps the day's route efficient (close to the stops before and after the empty slot), suits that time of day, and has strong ratings${wish.isEmpty ? '' : ', AND genuinely satisfies the traveller\'s specific request above'}.
+${wish.isEmpty ? '' : 'If NONE of the alternatives reasonably satisfy that request, do not force a poor match — instead set "spotId" to null and give a short friendly "reason" (e.g. what is missing nearby).\n'}
+Return STRICT JSON only: {"spotId":"<exact id or null>","note":"one specific practical tip, 12 words max","reason":"<only when spotId is null>"}
 ''';
   }
 

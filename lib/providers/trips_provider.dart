@@ -4,6 +4,7 @@ import '../core/utils/error_handler.dart';
 import '../models/enums.dart';
 import '../models/spot.dart';
 import '../models/trip.dart';
+import '../services/ai/ai_service.dart';
 import '../services/ai/trip_estimator.dart';
 import '../services/service_locator.dart';
 
@@ -87,6 +88,65 @@ class TripsProvider extends ChangeNotifier {
     );
     days[index] = days[index].copyWith(stops: [...days[index].stops, stop]);
     await _persistStructure(trip, days);
+  }
+
+  /// Swaps the spot at [stopIndex] for [spot] (search-based replace). Times and
+  /// budget are recomputed by [_persistStructure].
+  Future<void> replaceStopWithSpot(
+    Trip trip,
+    int dayNumber,
+    int stopIndex,
+    Spot spot,
+  ) async {
+    final days = [...trip.days];
+    final di = days.indexWhere((d) => d.dayNumber == dayNumber);
+    if (di < 0) return;
+    final stops = [...days[di].stops];
+    if (stopIndex < 0 || stopIndex >= stops.length) return;
+
+    stops[stopIndex] = TripStop(
+      spotId: spot.id,
+      name: spot.name,
+      photo: spot.coverPhoto,
+      categoryId: spot.categoryId,
+      lat: spot.lat,
+      lng: spot.lng,
+      note: spot.bestTimeToVisit.isEmpty
+          ? ''
+          : 'Best around ${spot.bestTimeToVisit.toLowerCase()}.',
+      estimatedCost: TripEstimator.stopCost(spot),
+      durationMinutes: TripEstimator.durationMinutes(spot.categoryId),
+    );
+    days[di] = days[di].copyWith(stops: stops);
+    await _persistStructure(trip, days);
+  }
+
+  /// AI-powered single-stop replace for a saved trip (optionally steered by
+  /// [prompt]). Persists when a swap happens; returns the [StopSwapResult] so
+  /// the screen can surface a "no match" message.
+  Future<StopSwapResult?> aiReplaceStop(
+    Trip trip,
+    int dayIndex,
+    int stopIndex,
+    List<Spot> spots, {
+    String prompt = '',
+  }) async {
+    try {
+      final result = await services.ai.replaceStop(
+        trip: trip,
+        dayIndex: dayIndex,
+        stopIndex: stopIndex,
+        spots: spots,
+        notes: trip.notes,
+        prompt: prompt,
+      );
+      if (result.swapped) await _persist(result.trip);
+      return result;
+    } catch (e) {
+      _error = friendlyError(e);
+      notifyListeners();
+      return null;
+    }
   }
 
   Future<void> removeStop(Trip trip, int dayNumber, int stopIndex) async {

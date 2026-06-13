@@ -11,6 +11,7 @@ import '../../models/spot.dart';
 import '../../providers/map_provider.dart';
 import '../../providers/spots_provider.dart';
 import '../../widgets/app_menu_button.dart';
+import '../../widgets/feedback.dart';
 import '../../widgets/spot_list_tile.dart';
 import '../../widgets/spot_marker.dart';
 import 'filter_sheet.dart';
@@ -45,6 +46,16 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _openSearch() async {
     await Navigator.pushNamed(context, AppRoutes.search);
+  }
+
+  Future<void> _locate(MapProvider mapP) async {
+    final found = await mapP.locateMe();
+    if (!mounted || found) return;
+    AppSnackbar.show(
+      context,
+      'Couldn\'t find your location — check that location is on and permission '
+      'is granted.',
+    );
   }
 
   @override
@@ -157,17 +168,29 @@ class _MapScreenState extends State<MapScreen> {
                 onClose: () => mapP.select(null),
               ),
             ),
+          // Locate-me button. Positioned (not a Scaffold FAB) so it clears the
+          // floating dock instead of colliding with it.
+          if (selected == null)
+            Positioned(
+              right: AppSpacing.md,
+              bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.md,
+              child: FloatingActionButton(
+                heroTag: 'locate',
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
+                tooltip: 'My location',
+                onPressed: mapP.locating ? null : () => _locate(mapP),
+                child: mapP.locating
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      )
+                    : const Icon(Icons.my_location_rounded),
+              ),
+            ),
         ],
       ),
-      floatingActionButton: selected != null
-          ? null
-          : FloatingActionButton(
-              heroTag: 'locate',
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              foregroundColor: Theme.of(context).colorScheme.onSurface,
-              onPressed: () => mapP.locateMe(),
-              child: const Icon(Icons.my_location_rounded),
-            ),
     );
   }
 

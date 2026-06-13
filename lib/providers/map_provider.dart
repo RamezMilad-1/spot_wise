@@ -15,6 +15,7 @@ class MapProvider extends ChangeNotifier {
   double _zoom = 11.5;
   String? _selectedSpotId;
   LatLng? _userLocation;
+  bool _locating = false;
   int _moveTick = 0;
 
   List<GeoResult> _searchResults = const [];
@@ -25,6 +26,9 @@ class MapProvider extends ChangeNotifier {
   double get zoom => _zoom;
   String? get selectedSpotId => _selectedSpotId;
   LatLng? get userLocation => _userLocation;
+
+  /// True while we're fetching the device location (drives the FAB spinner).
+  bool get locating => _locating;
 
   /// Increments whenever the camera target changes, so the map widget knows to
   /// animate the controller to [center]/[zoom].
@@ -60,11 +64,23 @@ class MapProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> locateMe() async {
-    final location = await services.location.getCurrent();
-    if (location != null) {
-      _userLocation = location;
-      moveTo(location, zoom: 13);
+  /// Centres the map on the device location. Returns false when the location is
+  /// off, denied or otherwise unavailable so the UI can prompt the user.
+  Future<bool> locateMe() async {
+    if (_locating) return false;
+    _locating = true;
+    notifyListeners();
+    try {
+      final location = await services.location.getCurrent();
+      if (location != null) {
+        _userLocation = location;
+        moveTo(location, zoom: 13);
+        return true;
+      }
+      return false;
+    } finally {
+      _locating = false;
+      notifyListeners();
     }
   }
 

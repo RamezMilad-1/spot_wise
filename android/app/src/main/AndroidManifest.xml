@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Android 13+ runtime notification permission (FCM + local notifications). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Location for the map's "locate me" button (geolocator). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="spot_wise"
         android:name="${applicationName}"

@@ -5,6 +5,7 @@ import '../models/enums.dart';
 import '../models/itinerary.dart';
 import '../models/spot.dart';
 import '../models/trip.dart';
+import '../services/ai/ai_service.dart';
 import '../services/location/geocoding_service.dart';
 import '../services/service_locator.dart';
 
@@ -155,26 +156,30 @@ class AiPlannerProvider extends ChangeNotifier {
   }
 
   /// Swaps one stop of [trip] for an AI-chosen alternative; the day re-flows
-  /// around it. Returns the updated trip, or null on failure.
-  Future<Trip?> replaceStop({
+  /// around it. [prompt] is an optional per-swap request (e.g. "a spot with
+  /// great Arabic food"). Returns the [StopSwapResult] (which carries a message
+  /// when nothing matched), or null on failure.
+  Future<StopSwapResult?> replaceStop({
     required Trip trip,
     required int dayIndex,
     required int stopIndex,
     required List<Spot> spots,
+    String prompt = '',
   }) async {
     if (_swapping != null) return null;
     _swapping = (dayIndex, stopIndex);
     notifyListeners();
     try {
-      final updated = await services.ai.replaceStop(
+      final result = await services.ai.replaceStop(
         trip: trip,
         dayIndex: dayIndex,
         stopIndex: stopIndex,
         spots: spots,
         notes: notes.trim(),
+        prompt: prompt,
       );
-      _result = updated;
-      return updated;
+      if (result.swapped) _result = result.trip;
+      return result;
     } catch (e) {
       _error = friendlyError(e);
       return null;

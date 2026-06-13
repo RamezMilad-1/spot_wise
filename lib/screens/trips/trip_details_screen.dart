@@ -21,8 +21,8 @@ import '../../widgets/app_button.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/glass_icon_button.dart';
 import '../../widgets/network_photo.dart';
-import '../../widgets/spot_list_tile.dart';
 import '../../widgets/spot_marker.dart';
+import '../../widgets/spot_search_sheet.dart';
 import '../../widgets/trip_budget_card.dart';
 
 class TripDetailsScreen extends StatefulWidget {
@@ -109,6 +109,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   Future<void> _addStop(Trip trip, int dayNumber) async {
     final spotsP = context.read<SpotsProvider>();
     final used = trip.days.expand((d) => d.stops).map((s) => s.spotId).toSet();
+    // Destination spots first, then the rest — browse the list or search it.
     final candidates = spotsP.spots.where((s) => !used.contains(s.id)).toList()
       ..sort((a, b) {
         final ac = a.city.toLowerCase() == trip.destination.toLowerCase()
@@ -120,44 +121,17 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
         return ac.compareTo(bc);
       });
 
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.7,
-        builder: (_, controller) => Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: Text(
-                'Add a spot',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                controller: controller,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                itemCount: candidates.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (_, i) => SpotListTile(
-                  spot: candidates[i],
-                  trailing: const Icon(Icons.add_circle_outline_rounded),
-                  onTap: () async {
-                    await context.read<TripsProvider>().addSpotToTrip(
-                      trip,
-                      candidates[i],
-                      dayNumber: dayNumber,
-                    );
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    final chosen = await showSpotSearch(
+      context,
+      spots: candidates,
+      title: 'Add a spot',
+      browseAll: true,
+    );
+    if (chosen == null || !mounted) return;
+    await context.read<TripsProvider>().addSpotToTrip(
+      trip,
+      chosen,
+      dayNumber: dayNumber,
     );
   }
 
@@ -283,13 +257,18 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 ),
                 leading: Icon(
                   Icons.notes_rounded,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                title: Text('Notes', style: text.titleSmall),
+                title: Text('Notes', style: text.titleMedium),
                 children: [
                   TextField(
                     controller: _notes,
-                    maxLines: 2,
+                    maxLines: 3,
+                    minLines: 2,
+                    style: text.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      height: 1.35,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Trip notes',
                       hintText: 'Flights, hotel, anything to remember…',
@@ -301,10 +280,11 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-              for (final day in trip.days)
+              for (final (dayIndex, day) in trip.days.indexed)
                 _DaySection(
                   trip: trip,
                   day: day,
+                  dayIndex: dayIndex,
                   onAddStop: () => _addStop(trip, day.dayNumber),
                   onOpenStop: _openStop,
                   onOpenRoute: () => _openDayRoute(day),
@@ -371,6 +351,7 @@ class _StopsMap extends StatelessWidget {
 class _DaySection extends StatelessWidget {
   final Trip trip;
   final TripDay day;
+  final int dayIndex;
   final VoidCallback onAddStop;
   final VoidCallback onOpenRoute;
   final void Function(TripStop) onOpenStop;
@@ -378,10 +359,65 @@ class _DaySection extends StatelessWidget {
   const _DaySection({
     required this.trip,
     required this.day,
+    required this.dayIndex,
     required this.onAddStop,
     required this.onOpenRoute,
     required this.onOpenStop,
   });
+
+  /// Replace one stop by browsing/searching the catalog.
+  Future<void> _replaceBySearch(BuildContext context, int stopIndex) async {
+    final used = trip.days.expand((d) => d.stops).map((s) => s.spotId).toSet();
+    final pool = context
+        .read<SpotsProvider>()
+        .spots
+        .where((s) => !used.contains(s.id))
+        .toList();
+    final chosen = await showSpotSearch(
+      context,
+      spots: pool,
+      title: 'Replace with…',
+      browseAll: true,
+    );
+    if (chosen == null || !context.mounted) return;
+    await context.read<TripsProvider>().replaceStopWithSpot(
+      trip,
+      day.dayNumber,
+      stopIndex,
+      chosen,
+    );
+    if (context.mounted) {
+      AppSnackbar.success(context, 'Replaced with “${chosen.name}”.');
+    }
+  }
+
+  /// Replace one stop with an AI pick, optionally steered by a typed note.
+  Future<void> _replaceByAi(BuildContext context, int stopIndex) async {
+    final note = await showSwapNoteSheet(context);
+    if (note == null || !context.mounted) return;
+    final spots = context.read<SpotsProvider>().spots;
+    final result = await context.read<TripsProvider>().aiReplaceStop(
+      trip,
+      dayIndex,
+      stopIndex,
+      spots,
+      prompt: note,
+    );
+    if (!context.mounted) return;
+    if (result == null) {
+      AppSnackbar.error(context, 'Couldn\'t replace that stop.');
+      return;
+    }
+    if (!result.swapped) {
+      AppSnackbar.show(
+        context,
+        result.message ?? 'No other nearby spots to swap in.',
+      );
+      return;
+    }
+    final after = result.trip.days[dayIndex].stops[stopIndex];
+    AppSnackbar.success(context, 'Swapped in “${after.name}”.');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -453,15 +489,19 @@ class _DaySection extends StatelessWidget {
             ReorderableListView(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              buildDefaultDragHandles: true,
+              // We draw our own drag handle so it doesn't overlap the menu.
+              buildDefaultDragHandles: false,
               onReorder: (oldI, newI) =>
                   tripsP.reorderStops(trip, day.dayNumber, oldI, newI),
               children: [
                 for (var i = 0; i < day.stops.length; i++)
                   _StopTile(
                     key: ValueKey('${day.dayNumber}-${day.stops[i].spotId}-$i'),
+                    index: i,
                     stop: day.stops[i],
                     onRemove: () => tripsP.removeStop(trip, day.dayNumber, i),
+                    onReplaceAi: () => _replaceByAi(context, i),
+                    onReplaceSearch: () => _replaceBySearch(context, i),
                     onTap: () => onOpenStop(day.stops[i]),
                   ),
               ],
@@ -473,13 +513,19 @@ class _DaySection extends StatelessWidget {
 }
 
 class _StopTile extends StatelessWidget {
+  final int index;
   final TripStop stop;
   final VoidCallback onRemove;
+  final VoidCallback onReplaceAi;
+  final VoidCallback onReplaceSearch;
   final VoidCallback onTap;
   const _StopTile({
     super.key,
+    required this.index,
     required this.stop,
     required this.onRemove,
+    required this.onReplaceAi,
+    required this.onReplaceSearch,
     required this.onTap,
   });
 
@@ -550,9 +596,60 @@ class _StopTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  onPressed: onRemove,
+                ReorderableDragStartListener(
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: Icon(
+                      Icons.drag_handle_rounded,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  tooltip: 'Edit stop',
+                  icon: const Icon(Icons.more_vert_rounded, size: 20),
+                  onSelected: (v) {
+                    if (v == 'ai') onReplaceAi();
+                    if (v == 'search') onReplaceSearch();
+                    if (v == 'remove') onRemove();
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'ai',
+                      child: Row(
+                        children: [
+                          Icon(Icons.auto_awesome_rounded, size: 20),
+                          SizedBox(width: AppSpacing.md),
+                          Text('Replace with AI'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'search',
+                      child: Row(
+                        children: [
+                          Icon(Icons.search_rounded, size: 20),
+                          SizedBox(width: AppSpacing.md),
+                          Text('Replace by search'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'remove',
+                      child: Row(
+                        children: [
+                          Icon(Icons.close_rounded, size: 20),
+                          SizedBox(width: AppSpacing.md),
+                          Text('Remove'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
