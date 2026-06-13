@@ -52,6 +52,46 @@ void main() {
       // 09:00 + 120min visit + 30min travel = 11:30
       expect(stops[1].suggestedTime, '11:30');
     });
+
+    test('adds traveller-requested rest between stops via gapMinutes', () {
+      final days = [
+        TripDay(dayNumber: 1, stops: [
+          const TripStop(spotId: 'a', name: 'A', lat: 0, lng: 0, categoryId: 'museum', durationMinutes: 120),
+          const TripStop(spotId: 'b', name: 'B', lat: 0, lng: 0, categoryId: 'food', durationMinutes: 75),
+        ]),
+      ];
+      final stops = TripEstimator.schedule(days, gapMinutes: 60).first.stops;
+      // 09:00 + 120min visit + 30min travel + 60min rest = 12:30
+      expect(stops[1].suggestedTime, '12:30');
+    });
+
+    test('waits for a pinned stop and flows later stops after it', () {
+      final days = [
+        TripDay(dayNumber: 1, stops: [
+          const TripStop(spotId: 'a', name: 'A', lat: 0, lng: 0, categoryId: 'viewpoint', durationMinutes: 45),
+          const TripStop(spotId: 'b', name: 'B', lat: 0, lng: 0, categoryId: 'museum', durationMinutes: 120, pinnedTime: '16:00'),
+          const TripStop(spotId: 'c', name: 'C', lat: 0, lng: 0, categoryId: 'food', durationMinutes: 75),
+        ]),
+      ];
+      final stops = TripEstimator.schedule(days).first.stops;
+      expect(stops[0].suggestedTime, '09:00');
+      // The pinned museum waits until its 16:00 anchor…
+      expect(stops[1].suggestedTime, '16:00');
+      expect(stops[1].dayPart, DayPart.afternoon);
+      // …and the stop after it shifts accordingly: 16:00 + 120 + 30 = 18:30.
+      expect(stops[2].suggestedTime, '18:30');
+      expect(stops[2].dayPart, DayPart.evening);
+    });
+
+    test('ignores an invalid pinnedTime', () {
+      final days = [
+        TripDay(dayNumber: 1, stops: [
+          const TripStop(spotId: 'a', name: 'A', lat: 0, lng: 0, categoryId: 'museum', durationMinutes: 60, pinnedTime: 'late'),
+        ]),
+      ];
+      final stops = TripEstimator.schedule(days).first.stops;
+      expect(stops.first.suggestedTime, '09:00');
+    });
   });
 
   group('TripEstimator.total', () {

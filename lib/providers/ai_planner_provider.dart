@@ -36,14 +36,19 @@ class AiPlannerProvider extends ChangeNotifier {
   PriceRange budget = PriceRange.moderate;
   TripPace pace = TripPace.balanced;
   double? budgetCap;
+  String notes = '';
 
   bool _generating = false;
   String? _error;
   Trip? _result;
+  (int, int)? _swapping;
 
   bool get generating => _generating;
   String? get error => _error;
   Trip? get result => _result;
+
+  /// (dayIndex, stopIndex) of the stop being AI-swapped right now, if any.
+  (int, int)? get swapping => _swapping;
   bool get isLive => services.ai.isLive;
   bool get canGenerate => destination.trim().isNotEmpty;
 
@@ -104,6 +109,11 @@ class AiPlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setNotes(String value) {
+    notes = value;
+    notifyListeners();
+  }
+
   Future<bool> generate(List<Spot> spots) async {
     if (!canGenerate) {
       _error = 'Tell us where you\'re going first.';
@@ -126,6 +136,7 @@ class AiPlannerProvider extends ChangeNotifier {
         budget: budget,
         pace: pace,
         budgetCap: budgetCap,
+        notes: notes.trim(),
       );
       _result = await services.ai.generateItinerary(
         request: request,
@@ -140,6 +151,36 @@ class AiPlannerProvider extends ChangeNotifier {
       _generating = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Swaps one stop of [trip] for an AI-chosen alternative; the day re-flows
+  /// around it. Returns the updated trip, or null on failure.
+  Future<Trip?> replaceStop({
+    required Trip trip,
+    required int dayIndex,
+    required int stopIndex,
+    required List<Spot> spots,
+  }) async {
+    if (_swapping != null) return null;
+    _swapping = (dayIndex, stopIndex);
+    notifyListeners();
+    try {
+      final updated = await services.ai.replaceStop(
+        trip: trip,
+        dayIndex: dayIndex,
+        stopIndex: stopIndex,
+        spots: spots,
+        notes: notes.trim(),
+      );
+      _result = updated;
+      return updated;
+    } catch (e) {
+      _error = friendlyError(e);
+      return null;
+    } finally {
+      _swapping = null;
+      notifyListeners();
     }
   }
 

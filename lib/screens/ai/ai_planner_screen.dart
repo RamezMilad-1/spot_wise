@@ -26,12 +26,14 @@ class AiPlannerScreen extends StatefulWidget {
 class _AiPlannerScreenState extends State<AiPlannerScreen> {
   final _destination = TextEditingController();
   final _budget = TextEditingController();
+  final _notes = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     final aiP = context.read<AiPlannerProvider>();
     _destination.text = aiP.destination;
+    _notes.text = aiP.notes;
     if (aiP.budgetCap != null) _budget.text = aiP.budgetCap!.round().toString();
   }
 
@@ -39,6 +41,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
   void dispose() {
     _destination.dispose();
     _budget.dispose();
+    _notes.dispose();
     super.dispose();
   }
 
@@ -264,6 +267,20 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                   onSelected: (_) => aiP.setPace(pace),
                 ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppTextField(
+            controller: _notes,
+            label: 'Special requests — optional',
+            hint:
+                'e.g. an hour rest between spots · Egyptian Museum at 4pm · no museums',
+            maxLines: 3,
+            onChanged: aiP.setNotes,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Written in plain words — the AI treats these as hard requirements.',
+            style: text.bodySmall,
           ),
           const SizedBox(height: AppSpacing.xxl),
           AppButton(

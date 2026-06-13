@@ -65,13 +65,17 @@ class TripEstimator {
   }
 
   /// Re-stamps every stop with an accurate clock time + day-part, starting at
-  /// 09:00, advancing by each stop's duration + a travel buffer, and slotting a
-  /// one-hour lunch break around midday. Preserves cost/duration on each stop.
-  static List<TripDay> schedule(List<TripDay> days) => [
-    for (final day in days) day.copyWith(stops: _scheduleDay(day.stops)),
+  /// 09:00, advancing by each stop's duration + a travel buffer (plus
+  /// [gapMinutes] of extra rest the traveller asked for), and slotting a
+  /// one-hour lunch break around midday. A stop with a `pinnedTime` is never
+  /// scheduled earlier than its anchor — the clock waits for it and everything
+  /// after flows from there. Preserves cost/duration on each stop.
+  static List<TripDay> schedule(List<TripDay> days, {int gapMinutes = 0}) => [
+    for (final day in days)
+      day.copyWith(stops: _scheduleDay(day.stops, gapMinutes)),
   ];
 
-  static List<TripStop> _scheduleDay(List<TripStop> stops) {
+  static List<TripStop> _scheduleDay(List<TripStop> stops, int gapMinutes) {
     var clock = 9 * 60; // 09:00, in minutes since midnight
     var lunchInserted = false;
     final out = <TripStop>[];
@@ -87,18 +91,38 @@ class TripEstimator {
         clock += 60;
         lunchInserted = true;
       }
+      // Honour a traveller-pinned time: wait for it if we're early.
+      final pinned = _parseHhmm(stop.pinnedTime);
+      if (pinned != null && pinned > clock) clock = pinned;
       final part = clock < 12 * 60
           ? DayPart.morning
           : (clock < 17 * 60 ? DayPart.afternoon : DayPart.evening);
       out.add(stop.copyWith(suggestedTime: _hhmm(clock), dayPart: part));
-      clock += dur + _travelBuffer;
+      clock += dur + _travelBuffer + gapMinutes;
+      // A meal stop counts as the lunch break — don't add another one.
+      if (stop.categoryId == 'food' || stop.categoryId == 'cafe') {
+        lunchInserted = true;
+      }
     }
     return out;
   }
 
+  /// Parses "HH:MM" → minutes since midnight, or null when absent/invalid.
+  static int? _parseHhmm(String value) {
+    final m = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(value.trim());
+    if (m == null) return null;
+    final h = int.parse(m.group(1)!);
+    final min = int.parse(m.group(2)!);
+    if (h > 23 || min > 59) return null;
+    return h * 60 + min;
+  }
+
   static String _hhmm(int minutes) {
-    final h = (minutes ~/ 60) % 24;
-    final m = minutes % 60;
+    // Never wrap past midnight — an overlong day caps at 23:59 instead of
+    // absurdly restarting at 00:xx.
+    final capped = minutes.clamp(0, 23 * 60 + 59);
+    final h = capped ~/ 60;
+    final m = capped % 60;
     return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 

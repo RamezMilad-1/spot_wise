@@ -66,7 +66,7 @@ class LocalItineraryGenerator {
             categoryId: s.categoryId,
             lat: s.lat,
             lng: s.lng,
-            note: _noteFor(s),
+            note: noteFor(s),
             estimatedCost: TripEstimator.stopCost(s),
             durationMinutes: TripEstimator.durationMinutes(s.categoryId),
           ),
@@ -150,12 +150,38 @@ class LocalItineraryGenerator {
     return km <= 60;
   }
 
-  String _noteFor(Spot s) {
+  /// Short practical note for a stop (also the fallback when the AI returns
+  /// none).
+  String noteFor(Spot s) {
     if (s.bestTimeToVisit.isNotEmpty) {
       return 'Best around ${s.bestTimeToVisit.toLowerCase()}.';
     }
     if (s.tags.isNotEmpty) return s.tags.first;
     return Categories.labelFor(s.categoryId);
+  }
+
+  /// Offline fallback for the AI stop swap: the best-rated candidate, with a
+  /// nudge for staying close to the rejected stop and matching its category.
+  Spot? pickReplacement({
+    required TripStop reject,
+    required List<Spot> candidates,
+  }) {
+    if (candidates.isEmpty) return null;
+    int score(Spot s) {
+      var sc = (s.rating * 10).round();
+      if (s.categoryId == reject.categoryId) sc += 8;
+      final km = _distance.as(
+        LengthUnit.Kilometer,
+        LatLng(reject.lat, reject.lng),
+        s.latLng,
+      );
+      sc -= km.round().clamp(0, 40);
+      return sc;
+    }
+
+    final sorted = [...candidates]
+      ..sort((a, b) => score(b).compareTo(score(a)));
+    return sorted.first;
   }
 
   String _dayTitle(List<TripStop> stops, String destination) {

@@ -16,6 +16,11 @@ class AiPlanRequest {
   /// Optional max total budget (USD). Null = no cap.
   final double? budgetCap;
 
+  /// Free-text special requests ("an hour rest between spots", "Egyptian
+  /// Museum at 4pm", "no museums"). Passed verbatim to the AI, which treats
+  /// them as hard requirements.
+  final String notes;
+
   const AiPlanRequest({
     required this.destination,
     this.country = '',
@@ -27,6 +32,7 @@ class AiPlanRequest {
     this.budget = PriceRange.moderate,
     this.pace = TripPace.balanced,
     this.budgetCap,
+    this.notes = '',
   });
 
   DateTime get endDate => startDate.add(Duration(days: dayCount - 1));
@@ -42,6 +48,7 @@ class AiPlanRequest {
     PriceRange? budget,
     TripPace? pace,
     double? budgetCap,
+    String? notes,
   }) {
     return AiPlanRequest(
       destination: destination ?? this.destination,
@@ -54,6 +61,7 @@ class AiPlanRequest {
       budget: budget ?? this.budget,
       pace: pace ?? this.pace,
       budgetCap: budgetCap ?? this.budgetCap,
+      notes: notes ?? this.notes,
     );
   }
 }

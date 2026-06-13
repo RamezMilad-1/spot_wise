@@ -14,4 +14,16 @@ abstract class AiService {
     required List<Spot> spots,
     required String userId,
   });
+
+  /// Replaces one stop of an existing plan with an AI-chosen alternative and
+  /// returns the updated trip — the rest of the day is re-scheduled around the
+  /// new stop (preserving pinned times and requested rest gaps). Returns the
+  /// trip unchanged when no alternative exists.
+  Future<Trip> replaceStop({
+    required Trip trip,
+    required int dayIndex,
+    required int stopIndex,
+    required List<Spot> spots,
+    String notes = '',
+  });
 }

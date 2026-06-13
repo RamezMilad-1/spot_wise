@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/trip.dart';
+import '../../providers/ai_planner_provider.dart';
 import '../../providers/spots_provider.dart';
 import '../../providers/trips_provider.dart';
 import '../../widgets/app_button.dart';
@@ -26,14 +27,16 @@ class ItineraryResultScreen extends StatefulWidget {
 }
 
 class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
+  /// Local copy so AI stop swaps update this screen in place.
+  late Trip _trip = widget.trip;
   bool _saving = false;
 
   Future<void> _save() async {
     setState(() => _saving = true);
     final tripsP = context.read<TripsProvider>();
-    final id = await tripsP.createTrip(widget.trip);
+    final id = await tripsP.createTrip(_trip);
     if (!mounted) return;
-    final created = tripsP.byId(id) ?? widget.trip;
+    final created = tripsP.byId(id) ?? _trip;
     AppSnackbar.success(context, 'Saved to your trips');
     Navigator.pushReplacementNamed(
       context,
@@ -42,9 +45,36 @@ class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
     );
   }
 
+  /// Asks the AI for a replacement for one stop; the rest of the day re-flows
+  /// around whatever it picks.
+  Future<void> _swap(int dayIndex, int stopIndex) async {
+    final aiP = context.read<AiPlannerProvider>();
+    final spots = context.read<SpotsProvider>().spots;
+    final before = _trip.days[dayIndex].stops[stopIndex];
+    final updated = await aiP.replaceStop(
+      trip: _trip,
+      dayIndex: dayIndex,
+      stopIndex: stopIndex,
+      spots: spots,
+    );
+    if (!mounted) return;
+    if (updated == null) {
+      AppSnackbar.error(context, aiP.error ?? 'Couldn\'t swap that stop.');
+      return;
+    }
+    final after = updated.days[dayIndex].stops[stopIndex];
+    if (after.spotId == before.spotId) {
+      AppSnackbar.show(context, 'No other nearby spots to swap in.');
+      return;
+    }
+    setState(() => _trip = updated);
+    AppSnackbar.success(context, 'Swapped in “${after.name}”.');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final trip = widget.trip;
+    final trip = _trip;
+    final swapping = context.watch<AiPlannerProvider>().swapping;
     final text = Theme.of(context).textTheme;
     final stops = trip.days.expand((d) => d.stops).toList();
 
@@ -124,7 +154,13 @@ class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
               ),
             ),
           const SizedBox(height: AppSpacing.lg),
-          for (final day in trip.days) _DayCard(day: day),
+          for (final (i, day) in trip.days.indexed)
+            _DayCard(
+              day: day,
+              dayIndex: i,
+              swapping: swapping,
+              onSwap: _swap,
+            ),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -157,7 +193,16 @@ class _ItineraryResultScreenState extends State<ItineraryResultScreen> {
 
 class _DayCard extends StatelessWidget {
   final TripDay day;
-  const _DayCard({required this.day});
+  final int dayIndex;
+  final (int, int)? swapping;
+  final void Function(int dayIndex, int stopIndex) onSwap;
+
+  const _DayCard({
+    required this.day,
+    required this.dayIndex,
+    required this.swapping,
+    required this.onSwap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +249,13 @@ class _DayCard extends StatelessWidget {
                 Text(day.summary, style: text.bodySmall),
               ],
               const SizedBox(height: AppSpacing.md),
-              for (final stop in day.stops) _StopRow(stop: stop),
+              for (final (i, stop) in day.stops.indexed)
+                _StopRow(
+                  stop: stop,
+                  busy: swapping == (dayIndex, i),
+                  swapEnabled: swapping == null,
+                  onSwap: () => onSwap(dayIndex, i),
+                ),
             ],
           ),
         ),
@@ -215,7 +266,16 @@ class _DayCard extends StatelessWidget {
 
 class _StopRow extends StatelessWidget {
   final TripStop stop;
-  const _StopRow({required this.stop});
+  final bool busy;
+  final bool swapEnabled;
+  final VoidCallback onSwap;
+
+  const _StopRow({
+    required this.stop,
+    required this.busy,
+    required this.swapEnabled,
+    required this.onSwap,
+  });
 
   void _open(BuildContext context) {
     final spot = context.read<SpotsProvider>().byId(stop.spotId);
@@ -282,6 +342,22 @@ class _StopRow extends StatelessWidget {
                 ],
               ),
             ),
+            if (busy)
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                tooltip: 'Swap with AI',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.autorenew_rounded, size: 20),
+                onPressed: swapEnabled ? onSwap : null,
+              ),
             const Icon(Icons.chevron_right_rounded, size: 18),
           ],
         ),

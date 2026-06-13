@@ -24,6 +24,7 @@ import '../../widgets/offline_banner.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/skeletons.dart';
 import '../../widgets/spot_card.dart';
+import '../../widgets/spot_search_sheet.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/user_avatar.dart';
 import '../map/filter_sheet.dart';
@@ -121,6 +122,17 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
   String get _destinationPlace =>
       _filter.city.isNotEmpty ? _filter.city : _filter.country;
 
+  /// Quick name search over the catalog — picking a suggestion opens the spot.
+  Future<void> _openSpotSearch() async {
+    final spot = await showSpotSearch(
+      context,
+      spots: context.read<SpotsProvider>().spots,
+    );
+    if (spot != null && mounted) {
+      Navigator.pushNamed(context, AppRoutes.spotDetails, arguments: spot);
+    }
+  }
+
   /// Pre-fills the AI planner with the active destination and jumps to the
   /// Plan tab.
   void _planTrip() {
@@ -150,6 +162,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> {
               onPressed: () =>
                   Navigator.pushNamed(context, AppRoutes.adminDashboard),
             ),
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            tooltip: 'Search spots',
+            onPressed: _openSpotSearch,
+          ),
           const NotificationBell(),
           Center(
             child: Tooltip(

@@ -15,6 +15,10 @@ class TripStop {
   final String note;
   final String suggestedTime;
 
+  /// "HH:MM" the traveller (via the AI) anchored this stop to; the scheduler
+  /// won't place it earlier. Empty = flows with the rest of the day.
+  final String pinnedTime;
+
   /// Estimated per-person spend at this stop (USD), derived from the spot's
   /// price tier + category by the trip estimator.
   final double estimatedCost;
@@ -32,6 +36,7 @@ class TripStop {
     this.dayPart = DayPart.morning,
     this.note = '',
     this.suggestedTime = '',
+    this.pinnedTime = '',
     this.estimatedCost = 0,
     this.durationMinutes = 0,
   });
@@ -48,6 +53,7 @@ class TripStop {
     dayPart: DayPart.fromString(JsonUtils.asStringOrNull(json['dayPart'])),
     note: JsonUtils.asString(json['note']),
     suggestedTime: JsonUtils.asString(json['suggestedTime']),
+    pinnedTime: JsonUtils.asString(json['pinnedTime']),
     estimatedCost: JsonUtils.asDouble(json['estimatedCost']),
     durationMinutes: JsonUtils.asInt(json['durationMinutes']),
   );
@@ -62,6 +68,7 @@ class TripStop {
     'dayPart': dayPart.value,
     'note': note,
     'suggestedTime': suggestedTime,
+    'pinnedTime': pinnedTime,
     'estimatedCost': estimatedCost,
     'durationMinutes': durationMinutes,
   };
@@ -70,6 +77,7 @@ class TripStop {
     DayPart? dayPart,
     String? note,
     String? suggestedTime,
+    String? pinnedTime,
     double? estimatedCost,
     int? durationMinutes,
   }) => TripStop(
@@ -82,6 +90,7 @@ class TripStop {
     dayPart: dayPart ?? this.dayPart,
     note: note ?? this.note,
     suggestedTime: suggestedTime ?? this.suggestedTime,
+    pinnedTime: pinnedTime ?? this.pinnedTime,
     estimatedCost: estimatedCost ?? this.estimatedCost,
     durationMinutes: durationMinutes ?? this.durationMinutes,
   );
@@ -156,6 +165,10 @@ class Trip {
   /// ISO-ish currency label for display (defaults to USD).
   final String currency;
 
+  /// Extra rest the traveller asked for between stops (minutes) — kept so
+  /// re-scheduling (e.g. after an AI stop swap) preserves the breaks.
+  final int restMinutes;
+
   const Trip({
     required this.id,
     required this.userId,
@@ -174,6 +187,7 @@ class Trip {
     this.estimatedCost = 0,
     this.budgetCap,
     this.currency = 'USD',
+    this.restMinutes = 0,
   });
 
   int get dayCount => days.isNotEmpty
@@ -207,6 +221,7 @@ class Trip {
           ? null
           : JsonUtils.asDouble(json['budgetCap']),
       currency: JsonUtils.asString(json['currency'], 'USD'),
+      restMinutes: JsonUtils.asInt(json['restMinutes']),
     );
   }
 
@@ -227,6 +242,7 @@ class Trip {
     'estimatedCost': estimatedCost,
     'budgetCap': budgetCap,
     'currency': currency,
+    'restMinutes': restMinutes,
   };
 
   Trip copyWith({
@@ -241,6 +257,7 @@ class Trip {
     double? estimatedCost,
     double? budgetCap,
     String? currency,
+    int? restMinutes,
   }) {
     return Trip(
       id: id,
@@ -260,6 +277,7 @@ class Trip {
       estimatedCost: estimatedCost ?? this.estimatedCost,
       budgetCap: budgetCap ?? this.budgetCap,
       currency: currency ?? this.currency,
+      restMinutes: restMinutes ?? this.restMinutes,
     );
   }
 }
