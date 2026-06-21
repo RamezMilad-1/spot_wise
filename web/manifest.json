@@ -1,11 +1,11 @@
 {
-    "name": "spot_wise",
-    "short_name": "spot_wise",
+    "name": "SpotWise",
+    "short_name": "SpotWise",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F7F7F5",
+    "theme_color": "#0E7C7B",
+    "description": "Discover community-shared travel spots, explore them on a map, save & review them, plan trips, and get AI-built itineraries.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

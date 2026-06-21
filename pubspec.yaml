@@ -1,5 +1,5 @@
 name: spot_wise
-description: "A new Flutter project."
+description: "SpotWise — a community travel-discovery app: find spots, explore them on a map, save & review them, plan trips, and get AI-built itineraries. Built with Flutter."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
